@@ -2,7 +2,7 @@
 version="$1"
 
 	if [ -z "$version" ]; then
-		version="latest"
+		version="dev"
 	fi
 
 docker buildx build . \
@@ -15,9 +15,3 @@ docker run -d --rm --name docker-backup \
 	-v /:/source:ro \
 	-v /media/external/docker-backup:/target \
 	"crockerish/docker-backup:$version"
-
-
-
-
-			?				B					 
-		

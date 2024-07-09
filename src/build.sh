@@ -2,9 +2,8 @@
 version="$1"
 
 	if [ -z "$version" ]; then
-		version="latest"
+		version="dev"
 	fi
 
 docker buildx build . \
 	-t "crockerish/docker-backup:$version"
-
