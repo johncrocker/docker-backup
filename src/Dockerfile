@@ -1,0 +1,39 @@
+FROM alpine:3.20.1
+
+RUN apk add --no-cache curl jq xz docker docker-cli-compose bash tzdata
+
+VOLUME /source
+VOLUME /target
+
+ENV TZ=UTC
+ENV BACKUP_LOGLEVEL="trace"
+ENV BACKUP_STORE="/target"
+ENV BACKUP_SOURCE="/source"
+ENV BACKUP_COMPRESS="false"
+ENV BACKUP_COMPRESS_METHOD="xz"
+ENV BACKUP_COMPRESS_XZ_OPT=-"2 -T0"
+ENV BACKUP_DOCKERIMAGE="alpine:3.20.1"
+ENV BACKUP_RETENTION_DAYS="1"
+ENV NOTIF_LOGLEVEL="error"
+ENV NOTIF_GOTIFY_ENABLE="false"
+ENV NOTIF_GOTIFY_TOKEN=""
+ENV NOTIF_GOTIFY_SERVER_URL=""
+ENV NOTIF_GOTIFY_PRIORITY="5"
+ENV NOTIF_APPRISE_ENABLE="false"
+ENV NOTIF_APPRISE_URLS=""
+ENV NOTIF_APPRISE_SERVER_URL=""
+ENV NOTIF_MATTERMOST_ENABLE="false"
+ENV NOTIF_MATTERMOST_HOST=""
+ENV NOTIF_MATTERMOST_KEY=""
+ENV NOTIF_DISCORD_ENABLE="false"
+ENV NOTIF_DISCORD_WEBHOOK_ID=""
+ENV NOTIF_DISCORD_TOKEN=""
+ENV NOTIF_DISCORD_USERNAME=""
+
+WORKDIR /app
+COPY ./backup/docker-backup.sh /app/docker-backup.sh
+COPY ./entrypoint.sh /app/entrypoint.sh
+# COPY ./backup/docker-backup-container.env /app/docker-backup.env
+
+ENTRYPOINT [ "/bin/sh", "-c", "/app/entrypoint.sh" ]
+
