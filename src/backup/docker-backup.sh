@@ -704,9 +704,7 @@ if [ "$EUID" -ne 0 ]; then
 	exit 1
 fi
 
-pidof -x "docker-backup.sh"
-
-if pidof -x "docker-backup.sh" >/dev/null; then
+if pidof "docker-backup.sh" >/dev/null; then
 	log "fatal" "Cannot start. Backup process is already running."
 	notify "docker-backup" "FATAL: Cannot start. Backup process is already running." "failure"
 	exit 1
