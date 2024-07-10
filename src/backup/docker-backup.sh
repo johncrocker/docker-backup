@@ -1,3 +1,4 @@
+
 #!/usr/bin/env bash
 # shellcheck disable=SC2317  # Don't warn about unreachable commands in this file
 
@@ -600,8 +601,7 @@ function dockerbackup() {
 			;;
 		volume)
 			filename="$target"/"$containername"/volumes/"$volumename""$(tarext)"
-			tmpfilename="$volumename""$(tarext)"
-			backupvolume "$volumename" "$tmpfilename" "$filename"
+			backupvolume "$volumename" "$filename"
 			;;
 		esac
 	done
