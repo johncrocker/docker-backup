@@ -5,6 +5,8 @@ if [ -z "$version" ]; then
 	version="dev"
 fi
 
+cd $HOME/src/docker-backup/src
+
 docker buildx build . \
 	-t "crockerish/docker-backup:$version"
 
