@@ -354,7 +354,6 @@ function backupvolume() {
 	local targetdir
 	local targetfile
 	local volumetype
-
 	volume="$1"
 	target="$2"
 	targetdir=$(realpath "$(dirname "$target")")
@@ -368,32 +367,28 @@ function backupvolume() {
 	*.tar.gz)
 		docker run --rm --name volumebackup \
 			-v "$volume":/source:ro \
-			-v "$targetdir":/target \
 			"$BACKUP_DOCKERIMAGE" \
-			tar -czf /target/"$targetfile" -C /source/ .
+			tar -cf - -C /source/ . | gzip >"$target"
 		;;
 	*.tar.bz2)
 		docker run --rm --name volumebackup \
-         		-v "$volume":/source:ro \
-      			-v "$targetdir":/target \
-        		-e BACKUP_COMPRESS_BZ2_OPT="$BACKUP_COMPRESS_BZ2_OPT" \
+			-v "$volume":/source:ro \
+			-e BACKUP_COMPRESS_BZ2_OPT="$BACKUP_COMPRESS_BZ2_OPT" \
 			"$BACKUP_DOCKERIMAGE" \
-			tar -cjf /target/"$targetfile" -C /source/ .
+			tar -cf - -C /source/ . bzip2 -z "$BACKUP_COMPRESS_BZ2_OPT" - >"$target"
 		;;
 	*.tar.xz)
 		docker run --rm --name volumebackup \
 			-v "$volume":/source:ro \
-			-v "$targetdir":/target \
 			-e XZ_OPT="$XZ_OPT" \
 			"$BACKUP_DOCKERIMAGE" \
-			tar -cjf /target/"$targetfile" -C /source/ .
+			tar -cf - -C /source/ . | xz -z "$XZ_OPT" - >"$target"
 		;;
 	*)
 		docker run --rm --name volumebackup \
 			-v "$volume":/source:ro \
-			-v "$targetdir":/target \
 			"$BACKUP_DOCKERIMAGE" \
-			tar -cf /target/"$targetfile" -C /source/ .
+			tar -cf - -C /source/ . >"$target"
 		;;
 	esac
 
@@ -503,7 +498,6 @@ function backuppostgres() {
 		esac
 	fi
 
-
 }
 
 function backupmariadb() {
@@ -606,7 +600,8 @@ function dockerbackup() {
 			;;
 		volume)
 			filename="$target"/"$containername"/volumes/"$volumename""$(tarext)"
-			backupvolume "$volumename" "$filename"
+			tmpfilename="$volumename""$(tarext)"
+			backupvolume "$volumename" "$tmpfilename" "$filename"
 			;;
 		esac
 	done

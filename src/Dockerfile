@@ -1,6 +1,6 @@
 FROM alpine:3.20.1
 
-RUN apk add --no-cache curl jq xz docker docker-cli-compose bash tzdata
+RUN apk add --no-cache curl jq xz docker docker-cli-compose bash tzdata bzip2
 
 VOLUME /source
 VOLUME /target
@@ -31,6 +31,7 @@ ENV NOTIF_DISCORD_TOKEN=""
 ENV NOTIF_DISCORD_USERNAME=""
 
 WORKDIR /app
+
 COPY ./backup/docker-backup.sh /app/docker-backup.sh
 COPY ./entrypoint.sh /app/entrypoint.sh
 # COPY ./backup/docker-backup-container.env /app/docker-backup.env
