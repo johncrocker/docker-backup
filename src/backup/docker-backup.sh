@@ -362,7 +362,7 @@ function backupvolumebypath() {
 
 	mkdir -p "$targetdir"
 	log "trace" "Backing up volume mount $volume"
-	log "trace" "Using path: §volumepath"
+	log "trace" "Using path: $volumepath"
 
 	case "$targetfile" in
 	*.tar.gz)
