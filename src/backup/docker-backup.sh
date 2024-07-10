@@ -362,6 +362,13 @@ function backupvolumebypath() {
 
 	mkdir -p "$targetdir"
 	log "trace" "Backing up volume mount $volume"
+
+	if [ ! -d "$volumepath" ]; then
+		log "warn" "Cannot reach mount via filesystem. Using Docker method."
+		backupvolumewithdocker "$volume" "$target"
+		return
+	fi
+
 	log "trace" "Using path: $volumepath"
 
 	case "$targetfile" in
