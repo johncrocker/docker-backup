@@ -1,6 +1,6 @@
 FROM alpine:3.20.1
 
-RUN apk add --no-cache curl jq xz docker docker-cli-compose bash tzdata bzip2
+RUN apk add --no-cache curl jq xz docker bash tzdata bzip2
 
 VOLUME /source
 VOLUME /target

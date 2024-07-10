@@ -302,7 +302,7 @@ function backupnetworks() {
 function getcontainermounts() {
 	local id
 	id="$1"
-	docker inspect "$id" -f '{{$v:=.Name}}{{ range .Mounts }}{{$v}}{{printf ","}}{{.Type}}{{printf ","}}{{ .Source }}{{printf ","}}{{.Name}}{{printf ","}}{{.Destination}}{{printf "\n"}}{{ end }}' | cut -c2- | sed -e '$ d' | sort
+	docker container inspect "$id" -f '{{$v:=.Name}}{{ range .Mounts }}{{$v}}{{printf ","}}{{.Type}}{{printf ","}}{{ .Source }}{{printf ","}}{{.Name}}{{printf ","}}{{.Destination}}{{printf "\n"}}{{ end }}' | cut -c2- | sed -e '$ d' | sort
 }
 
 function getcontainers() {
@@ -348,20 +348,58 @@ function backupworkingdir() {
 	esac
 }
 
-function backupvolume() {
+function backupvolumebypath() {
 	local volume
+	local volumepath
 	local target
 	local targetdir
 	local targetfile
-	local volumetype
 	volume="$1"
 	target="$2"
 	targetdir=$(realpath "$(dirname "$target")")
 	targetfile=$(basename "$target")
-	volumetype=$(getvolumelabelvalue "$volume" "guidcruncher.dockerbackup.type" "generic")
+	volumepath="$BACKUP_SOURCE"$(docker volume ls --format '{{.Mountpoint}}' -f "Name=$volume")
 
 	mkdir -p "$targetdir"
-	log "trace" "Backing up volume mount $volume (type=$volumetype)"
+	log "trace" "Backing up volume mount $volume"
+
+	if [ ! -d "$volumepath" ]; then
+		log "warn" "Cannot reach mount via filesystem. Using Docker method."
+		backupvolumewithdocker "$volume" "$target"
+		return
+	fi
+
+	log "trace" "Using path: $volumepath"
+
+	case "$targetfile" in
+	*.tar.gz)
+		tar -czf "$target" -C "$volumepath" .
+		;;
+	*.tar.bz2)
+		tar -cf - -C "$volumepath" . | bzip2 -z "$BACKUP_COMPRESS_BZ2_OPT" - >"$target"
+		;;
+	*.tar.xz)
+		tar -cf - -C "$volumepath" . | xz -z "$XZ_OPT" - >"$target"
+		;;
+	*)
+		tar -cf "$target" -C "$volumepath" .
+		;;
+	esac
+
+}
+
+function backupvolumewithdocker() {
+	local volume
+	local target
+	local targetdir
+	local targetfile
+	volume="$1"
+	target="$2"
+	targetdir=$(realpath "$(dirname "$target")")
+	targetfile=$(basename "$target")
+
+	mkdir -p "$targetdir"
+	log "trace" "Backing up volume mount $volume"
 
 	case "$targetfile" in
 	*.tar.gz)
@@ -399,13 +437,10 @@ function backupbind() {
 	local target
 	local targetdir
 	local targetfile
-	local volumetype
 	source="$1"
 	target="$2"
 	targetdir=$(realpath "$(dirname "$target")")
 	targetfile=$(basename "$target")
-
-	volumetype=$(getvolumelabelvalue "$volume" "guidcruncher.dockerbackup.type" "generic")
 
 	mkdir -p "$targetdir"
 	log "trace" "Backing up bind mount $source"
@@ -600,7 +635,7 @@ function dockerbackup() {
 			;;
 		volume)
 			filename="$target"/"$containername"/volumes/"$volumename""$(tarext)"
-			backupvolume "$volumename" "$filename"
+			backupvolumebypath "$volumename" "$filename"
 			;;
 		esac
 	done
