@@ -7,3 +7,5 @@ version="$1"
 
 docker buildx build . \
 	-t "crockerish/docker-backup:$version"
+
+docker push "crockerish/docker-backup:$version"

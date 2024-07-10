@@ -50,6 +50,9 @@ function compext() {
 		gzip)
 			echo ".gz"
 			;;
+		bzip2)
+			echo ".bz2"
+			;;
 		xz)
 			echo ".xz"
 			;;
@@ -68,6 +71,9 @@ function tarext() {
 		case "$BACKUP_COMPRESS_METHOD" in
 		gzip)
 			echo ".tar.gz"
+			;;
+		bzip2)
+			echo ".tar.bz2"
 			;;
 		xz)
 			echo ".tar.xz"
@@ -330,6 +336,9 @@ function backupworkingdir() {
 	*.tar.gz)
 		tar -czf "$target" -C "$workingdir" .
 		;;
+	*.tar.bz2)
+		tar -cf - -C "$workingdir" . | bzip2 -z "$BACKUP_COMPRESS_BZ2_OPT" - >"$target"
+		;;
 	*.tar.xz)
 		tar -cf - -C "$workingdir" . | xz -z "$XZ_OPT" - >"$target"
 		;;
@@ -345,7 +354,6 @@ function backupvolume() {
 	local targetdir
 	local targetfile
 	local volumetype
-
 	volume="$1"
 	target="$2"
 	targetdir=$(realpath "$(dirname "$target")")
@@ -359,24 +367,28 @@ function backupvolume() {
 	*.tar.gz)
 		docker run --rm --name volumebackup \
 			-v "$volume":/source:ro \
-			-v "$targetdir":/target \
 			"$BACKUP_DOCKERIMAGE" \
-			tar -czf /target/"$targetfile" -C /source/ .
+			tar -cf - -C /source/ . | gzip >"$target"
+		;;
+	*.tar.bz2)
+		docker run --rm --name volumebackup \
+			-v "$volume":/source:ro \
+			-e BACKUP_COMPRESS_BZ2_OPT="$BACKUP_COMPRESS_BZ2_OPT" \
+			"$BACKUP_DOCKERIMAGE" \
+			tar -cf - -C /source/ . bzip2 -z "$BACKUP_COMPRESS_BZ2_OPT" - >"$target"
 		;;
 	*.tar.xz)
 		docker run --rm --name volumebackup \
 			-v "$volume":/source:ro \
-			-v "$targetdir":/target \
 			-e XZ_OPT="$XZ_OPT" \
 			"$BACKUP_DOCKERIMAGE" \
-			tar -cjf /target/"$targetfile" -C /source/ .
+			tar -cf - -C /source/ . | xz -z "$XZ_OPT" - >"$target"
 		;;
 	*)
 		docker run --rm --name volumebackup \
 			-v "$volume":/source:ro \
-			-v "$targetdir":/target \
 			"$BACKUP_DOCKERIMAGE" \
-			tar -cf /target/"$targetfile" -C /source/ .
+			tar -cf - -C /source/ . >"$target"
 		;;
 	esac
 
@@ -401,6 +413,9 @@ function backupbind() {
 	case "$targetfile" in
 	*.tar.gz)
 		tar -czf "$target" -C "$source" .
+		;;
+	*.tar.bz2)
+		tar -cf - -C "$source" . | bzip2 -z "$BACKUP_COMPRESS_BZ2_OPT" - >"$target"
 		;;
 	*.tar.xz)
 		tar -cf - -C "$source" . | xz -z "$XZ_OPT" - >"$target"
@@ -432,6 +447,7 @@ function commitcontainer() {
 
 	case "$targetfile" in
 	*.tar.gz) docker image save "$tag" | gzip >"$target" ;;
+	*.tar.bz2) docker image save "$tag" | bzip2 -z "$BACKUP_COMPRESS_BZ2_OPT" - >"$target" ;;
 	*.tar.xz) docker image save "$tag" | xz -z "$XZ_OPT" - >"$target" ;;
 	*) docker image save "$tag" >"$target" ;;
 	esac
@@ -477,6 +493,7 @@ function backuppostgres() {
 		case "$targetfile" in
 		*.sql.gz) docker exec "$id" sh -c 'pg_dumpall --inserts -U $POSTGRES_USER ' | gzip >"$target" ;;
 		*.sql.xz) docker exec "$id" sh -c 'pg_dumpall --inserts -U $POSTGRES_USER ' | xz -z "$XZ_OPT" - >"$target" ;;
+		*.sql.bz2) docker exec "$id" sh -c 'pg_dumpall --inserts -U $POSTGRES_USER ' | bzip2 -z "$BACKUP_COMPRESS_BZ2_OPT" - >"$target" ;;
 		*) docker exec "$id" sh -c 'pg_dumpall --inserts -U $POSTGRES_USER ' >"$target" ;;
 		esac
 	fi
@@ -506,6 +523,7 @@ function backupmariadb() {
 		case "$targetfile" in
 		*.sql.gz) docker exec "$id" sh -c 'mariadb-dump -u root  --all-databases' | gzip >"$target" ;;
 		*.sql.xz) docker exec "$id" sh -c 'mariadb-dump -u root  --all-databases' | xz -z "$XZ_OPT" - >"$target" ;;
+		*.sql.bz2) docker exec "$id" sh -c 'mariadb-dump -u root  --all-databases' | bzip2 -z "$BACKUP_COMPRESS_BZ2_OPT" - >"$target" ;;
 		*) docker exec "$id" sh -c 'mariadb-dump -u root  --all-databases' >"$target" ;;
 		esac
 	fi
@@ -530,6 +548,7 @@ function backupcontainer() {
 	case "$targetfile" in
 	*.tar.gz) docker container export "$id" | gzip >"$target" ;;
 	*.tar.xz) docker container export "$id" | xz -z "$XZ_OPT" - >"$target" ;;
+	*.tar.bz2) docker container export "$id" | bzip2 -z "$BACKUP_COMPRESS_BZ2_OPT" - >"$target" ;;
 	*) docker container export "$id" >"$target" ;;
 	esac
 
@@ -679,9 +698,7 @@ if [ "$EUID" -ne 0 ]; then
 	exit 1
 fi
 
-pidof -x "docker-backup.sh"
-
-if pidof -x "docker-backup.sh" >/dev/null; then
+if pidof "docker-backup.sh" >/dev/null; then
 	log "fatal" "Cannot start. Backup process is already running."
 	notify "docker-backup" "FATAL: Cannot start. Backup process is already running." "failure"
 	exit 1
