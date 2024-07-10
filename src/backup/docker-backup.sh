@@ -498,7 +498,7 @@ function containerwhich() {
 	cmd="$2"
 	result=$(docker exec "$id" sh -c "which $cmd 2> /dev/null")
 
-	if echoo "$result" | grep -q "exec failed"; then
+	if echo "$result" | grep -q "exec failed"; then
 		echo ""
 	else
 		echo "$result"
