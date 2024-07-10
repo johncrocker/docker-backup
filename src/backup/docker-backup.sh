@@ -340,7 +340,7 @@ function backupworkingdir() {
 		tar -cf - -C "$workingdir" . | bzip2 -z "$BACKUP_COMPRESS_BZ2_OPT" - >"$target"
 		;;
 	*.tar.xz)
-		tar -cf - -C "$workingdir" . | xz -z "$XZ_OPT" - >"$target"
+		tar -cf - -C "$workingdir" . | xz -z "$BACKUP_COMPRESS_XZ_OPT" - >"$target"
 		;;
 	*)
 		tar -cf "$target" -C "$workingdir" .
@@ -379,7 +379,7 @@ function backupvolumebypath() {
 		tar -cf - -C "$volumepath" . | bzip2 -z "$BACKUP_COMPRESS_BZ2_OPT" - >"$target"
 		;;
 	*.tar.xz)
-		tar -cf - -C "$volumepath" . | xz -z "$XZ_OPT" - >"$target"
+		tar -cf - -C "$volumepath" . | xz -z "$BACKUP_COMPRESS_XZ_OPT" - >"$target"
 		;;
 	*)
 		tar -cf "$target" -C "$volumepath" .
@@ -418,9 +418,9 @@ function backupvolumewithdocker() {
 	*.tar.xz)
 		docker run --rm --name volumebackup \
 			-v "$volume":/source:ro \
-			-e XZ_OPT="$XZ_OPT" \
+			-e BACKUP_COMPRESS_XZ_OPT="$BACKUP_COMPRESS_XZ_OPT" \
 			"$BACKUP_DOCKERIMAGE" \
-			tar -cf - -C /source/ . | xz -z "$XZ_OPT" - >"$target"
+			tar -cf - -C /source/ . | xz -z "$BACKUP_COMPRESS_XZ_OPT" - >"$target"
 		;;
 	*)
 		docker run --rm --name volumebackup \
@@ -453,7 +453,7 @@ function backupbind() {
 		tar -cf - -C "$source" . | bzip2 -z "$BACKUP_COMPRESS_BZ2_OPT" - >"$target"
 		;;
 	*.tar.xz)
-		tar -cf - -C "$source" . | xz -z "$XZ_OPT" - >"$target"
+		tar -cf - -C "$source" . | xz -z "$BACKUP_COMPRESS_XZ_OPT" - >"$target"
 		;;
 	*)
 		tar -cf "$target" -C "$source" .
@@ -483,7 +483,7 @@ function commitcontainer() {
 	case "$targetfile" in
 	*.tar.gz) docker image save "$tag" | gzip >"$target" ;;
 	*.tar.bz2) docker image save "$tag" | bzip2 -z "$BACKUP_COMPRESS_BZ2_OPT" - >"$target" ;;
-	*.tar.xz) docker image save "$tag" | xz -z "$XZ_OPT" - >"$target" ;;
+	*.tar.xz) docker image save "$tag" | xz -z "$BACKUP_COMPRESS_XZ_OPT" - >"$target" ;;
 	*) docker image save "$tag" >"$target" ;;
 	esac
 
@@ -527,7 +527,7 @@ function backuppostgres() {
 		echo $target
 		case "$targetfile" in
 		*.sql.gz) docker exec "$id" sh -c 'pg_dumpall --inserts -U $POSTGRES_USER ' | gzip >"$target" ;;
-		*.sql.xz) docker exec "$id" sh -c 'pg_dumpall --inserts -U $POSTGRES_USER ' | xz -z "$XZ_OPT" - >"$target" ;;
+		*.sql.xz) docker exec "$id" sh -c 'pg_dumpall --inserts -U $POSTGRES_USER ' | xz -z "$BACKUP_COMPRESS_XZ_OPT" - >"$target" ;;
 		*.sql.bz2) docker exec "$id" sh -c 'pg_dumpall --inserts -U $POSTGRES_USER ' | bzip2 -z "$BACKUP_COMPRESS_BZ2_OPT" - >"$target" ;;
 		*) docker exec "$id" sh -c 'pg_dumpall --inserts -U $POSTGRES_USER ' >"$target" ;;
 		esac
@@ -557,7 +557,7 @@ function backupmariadb() {
 
 		case "$targetfile" in
 		*.sql.gz) docker exec "$id" sh -c 'mariadb-dump -u root  --all-databases' | gzip >"$target" ;;
-		*.sql.xz) docker exec "$id" sh -c 'mariadb-dump -u root  --all-databases' | xz -z "$XZ_OPT" - >"$target" ;;
+		*.sql.xz) docker exec "$id" sh -c 'mariadb-dump -u root  --all-databases' | xz -z "$BACKUP_COMPRESS_XZ_OPT" - >"$target" ;;
 		*.sql.bz2) docker exec "$id" sh -c 'mariadb-dump -u root  --all-databases' | bzip2 -z "$BACKUP_COMPRESS_BZ2_OPT" - >"$target" ;;
 		*) docker exec "$id" sh -c 'mariadb-dump -u root  --all-databases' >"$target" ;;
 		esac
@@ -582,7 +582,7 @@ function backupcontainer() {
 
 	case "$targetfile" in
 	*.tar.gz) docker container export "$id" | gzip >"$target" ;;
-	*.tar.xz) docker container export "$id" | xz -z "$XZ_OPT" - >"$target" ;;
+	*.tar.xz) docker container export "$id" | xz -z "$BACKUP_COMPRESS_XZ_OPT" - >"$target" ;;
 	*.tar.bz2) docker container export "$id" | bzip2 -z "$BACKUP_COMPRESS_BZ2_OPT" - >"$target" ;;
 	*) docker container export "$id" >"$target" ;;
 	esac
@@ -677,8 +677,6 @@ function backupsystem() {
 }
 
 function main() {
-	XZ_OPT_STORE="$XZ_OPT"
-	XZ_OPT="$BACKUP_COMPRESS_XZ_OPT"
 	containertobackup="$1"
 	backuptarget="$BACKUP_STORE"/"$(date '+%Y%m%d-%H%M')"
 	mkdir -p "$backuptarget"
@@ -712,8 +710,6 @@ function main() {
 	fi
 
 	# sudo chown "$(id -u)":"$(id -g)" "$backuptarget" -R
-
-	XZ_OPT="$XZ_OPT_STORE"
 
 	notify "docker-backup" "Backup operation finished" "success"
 	log "trace" "Finished."
