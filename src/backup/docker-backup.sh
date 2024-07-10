@@ -1,4 +1,3 @@
-
 #!/usr/bin/env bash
 # shellcheck disable=SC2317  # Don't warn about unreachable commands in this file
 
