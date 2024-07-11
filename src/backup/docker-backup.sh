@@ -21,7 +21,7 @@ function log() {
 	configloglevel="$BACKUP_LOGLEVEL"
 
 	if [ ! -f "$LOGFILENAME" ]; then
-		echo "" > "$LOGFILENAME"
+		echo "" >"$LOGFILENAME"
 	fi
 
 	if [[ "$configloglevel" = "" ]]; then
@@ -38,7 +38,7 @@ function log() {
 
 	if [[ ("$level" -lt "$configuredlevel") || ("$level" = "$configuredlevel") ]]; then
 		printf "%b%s %s : %s \e[0m\n" "$colour" "$(date '+%Y-%m-%d %H:%M:%S')" "${padding:${#levelstr}}$levelstr" "$message"
-		printf "%b%s %s : %s \e[0m\n" "$colour" "$(date '+%Y-%m-%d %H:%M:%S')" "${padding:${#levelstr}}$levelstr" "$message" >> "$LOGFILENAME"
+		printf "%b%s %s : %s \e[0m\n" "$colour" "$(date '+%Y-%m-%d %H:%M:%S')" "${padding:${#levelstr}}$levelstr" "$message" >>"$LOGFILENAME"
 	fi
 
 	if [[ "$NOTIF_LOGLEVEL" != "" ]]; then
@@ -245,7 +245,8 @@ function getvolumelabelvalue() {
 function getcontainersusingvolume() {
 	local volume
 	volume="$1"
-	docker container inspect $(docker ps --no-trunc -q) -f  "{{\$v:=.Name}}{{ range .Mounts }}{{ if eq .Type \"volume\" }}{{ if eq .Name \"$volume\" }}{{\$v}}{{printf \"\\n\"}}{{ end }}{{ end }}{{ end }}" | cut -c2- | grep -v '^$' | sort
+	# shellcheck disable=SC2046
+	docker container inspect $(docker ps --no-trunc -q) -f "{{\$v:=.Name}}{{ range .Mounts }}{{ if eq .Type \"volume\" }}{{ if eq .Name \"$volume\" }}{{\$v}}{{printf \"\\n\"}}{{ end }}{{ end }}{{ end }}" | cut -c2- | grep -v '^$' | sort
 }
 
 function getcontainerlabelvalue() {
@@ -649,7 +650,7 @@ function dockerbackup() {
 
 			if [[ "$BACKUP_PAUSECONTAINERS" = "true" ]]; then
 				log "trace" "Stopping containers using volume $volumename before volume backup"
-				volumecontainers=$(getcontainersusingvolume "$volumename") 
+				volumecontainers=$(getcontainersusingvolume "$volumename")
 
 				echo "$volumecontainers" | while IFS= read -r volumecontainer; do
 					log "trace" "Stopping container $volumecontainer to backup volume $volumename"
@@ -661,9 +662,9 @@ function dockerbackup() {
 				log "trace" "Starting containers using volume $volumename after volume backup"
 
 				echo "$volumecontainers" | while IFS= read -r volumecontainer; do
- 					log "trace" "Starting container $volumecontainer after backup volume $volumename"
+					log "trace" "Starting container $volumecontainer after backup volume $volumename"
 					docker start "$volumecontainer"
- 				done
+				done
 			else
 				backupvolumebypath "$volumename" "$filename"
 			fi
@@ -746,12 +747,11 @@ function main() {
 	log "trace" "Finished."
 }
 
-
 BACKUPDATE="$(date '+%Y%m%d-%H%M')"
 LOGFILENAME="/logs/docker-backup-""$BACKUPDATE"".log"
 
 if [ ! -f "$LOGFILENAME" ]; then
- echo "" > "$LOGFILENAME"
+	echo "" >"$LOGFILENAME"
 fi
 
 envfile="$1"
