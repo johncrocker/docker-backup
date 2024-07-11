@@ -204,22 +204,6 @@ function notify() {
 	mattermost_notify "$title" "$message" "$type" "$silent"
 }
 
-function readenvironmentfile() {
-	local filename
-	filename="%$1"
-
-	if [[ ! -f "$filename" ]]; then
-		filename="./docker-backup.env"
-	fi
-
-	if [[ -f "$filename" ]]; then
-		log "trace" "Using settings from Env File: $filename"
-		set -a
-		source "$filename"
-		set +a
-	fi
-}
-
 function getvolumelabelvalue() {
 	local volume
 	local label
@@ -742,32 +726,20 @@ function main() {
 	log "trace" "Finished."
 }
 
-function bootstrap() {
-	envfile="$1"
-
-	if [[ "$envfile" = "" ]]; then
-		envfile="./docker-backup.env"
-	fi
-
-	readenvironmentfile "$envfile"
-
-	if [ "$EUID" -ne 0 ]; then
-		log "fatal" "Cannot start. Process must be run as root user or via sudo."
-		notify "docker-backup" "FATAL: Cannot start. Process must be run as root user or via sudo." "failure"
-		exit 1
-	fi
-
-	if pidof "docker-backup.sh" >/dev/null; then
-		log "fatal" "Cannot start. Backup process is already running."
-		notify "docker-backup" "FATAL: Cannot start. Backup process is already running." "failure"
-		exit 1
-	fi
-
-	main "$@"
-}
-
 BACKUPDATE="$(date '+%Y%m%d-%H%M')"
 
-bootstrap "$@"
+if [ "$EUID" -ne 0 ]; then
+	log "fatal" "Cannot start. Process must be run as root user or via sudo."
+	notify "docker-backup" "FATAL: Cannot start. Process must be run as root user or via sudo." "failure"
+	exit 1
+fi
+
+if pidof "docker-backup.sh" >/dev/null; then
+	log "fatal" "Cannot start. Backup process is already running."
+	notify "docker-backup" "FATAL: Cannot start. Backup process is already running." "failure"
+	exit 1
+fi
+
+main "$@"
 
 exit 0
