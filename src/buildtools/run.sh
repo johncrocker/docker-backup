@@ -1,6 +1,6 @@
 #!/bin/bash
 version="$1"
-
+ 
 if [ -z "$version" ]; then
 	version="dev"
 fi
@@ -17,4 +17,5 @@ docker run -it --rm --name docker-backup \
 	-v /var/run/docker.sock:/var/run/docker.sock:ro \
 	-v /:/source:ro \
 	-v /media/external/docker-backup:/target \
+	-v $HOME/logs:/logs \
 	"crockerish/docker-backup:$version"

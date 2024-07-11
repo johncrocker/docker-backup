@@ -4,8 +4,10 @@ RUN apk add --no-cache curl jq xz docker bash tzdata bzip2
 
 VOLUME /source
 VOLUME /target
+VOLUME /logs
 
 ENV TZ=UTC
+ENV BACKUP_PAUSECONTAINERS="false"
 ENV BACKUP_LOGLEVEL="trace"
 ENV BACKUP_STORE="/target"
 ENV BACKUP_SOURCE="/source"
