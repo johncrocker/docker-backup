@@ -18,7 +18,7 @@ fi
 shfmt ./backup/docker-backup.sh >./backup/docker-backup.new
 
 if [[ "$?" -eq 0 ]]; then
-	mv ./backup/docker-backup.new ./backup/docker-backup
+	mv ./backup/docker-backup.new ./backup/docker-backup.sh
 else
 	rm ./backup/docker-backup.new
 	exit
