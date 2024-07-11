@@ -10,5 +10,11 @@ if [ -f /.dockerenv ]; then
 	export BACKUP_SOURCE="/source"
 fi
 
+LOGFILENAME="/logs/docker-backup-""$BACKUPDATE"".log"
+
+if [ ! -f "$LOGFILENAME" ]; then
+	echo "" >"$LOGFILENAME"
+fi
+
 cd /app
-./docker-backup.sh "$DOCKER_BACKUP_CONTAINERS"
+./docker-backup.sh "$DOCKER_BACKUP_CONTAINERS" 2>&1 | tee "$LOGFILENAME"

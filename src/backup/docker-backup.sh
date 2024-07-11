@@ -20,10 +20,6 @@ function log() {
 	logcolours=([fatal]="\e[1;31m" [error]="\e[31m" [warn]="\e[1;37m" [info]="\e[1;33m" [debug]="\e[0m" [trace]="\e[0m")
 	configloglevel="$BACKUP_LOGLEVEL"
 
-	if [ ! -f "$LOGFILENAME" ]; then
-		echo "" >"$LOGFILENAME"
-	fi
-
 	if [[ "$configloglevel" = "" ]]; then
 		configloglevel="trace"
 	fi
@@ -38,7 +34,6 @@ function log() {
 
 	if [[ ("$level" -lt "$configuredlevel") || ("$level" = "$configuredlevel") ]]; then
 		printf "%b%s %s : %s \e[0m\n" "$colour" "$(date '+%Y-%m-%d %H:%M:%S')" "${padding:${#levelstr}}$levelstr" "$message"
-		printf "%s %s : %s\n" "$(date '+%Y-%m-%d %H:%M:%S')" "${padding:${#levelstr}}$levelstr" "$message" >>"$LOGFILENAME"
 	fi
 
 	if [[ "$NOTIF_LOGLEVEL" != "" ]]; then
@@ -747,32 +742,32 @@ function main() {
 	log "trace" "Finished."
 }
 
+function bootstrap() {
+	envfile="$1"
+
+	if [[ "$envfile" = "" ]]; then
+		envfile="./docker-backup.env"
+	fi
+
+	readenvironmentfile "$envfile"
+
+	if [ "$EUID" -ne 0 ]; then
+		log "fatal" "Cannot start. Process must be run as root user or via sudo."
+		notify "docker-backup" "FATAL: Cannot start. Process must be run as root user or via sudo." "failure"
+		exit 1
+	fi
+
+	if pidof "docker-backup.sh" >/dev/null; then
+		log "fatal" "Cannot start. Backup process is already running."
+		notify "docker-backup" "FATAL: Cannot start. Backup process is already running." "failure"
+		exit 1
+	fi
+
+	main "$@"
+}
+
 BACKUPDATE="$(date '+%Y%m%d-%H%M')"
-LOGFILENAME="/logs/docker-backup-""$BACKUPDATE"".log"
 
-if [ ! -f "$LOGFILENAME" ]; then
-	echo "" >"$LOGFILENAME"
-fi
+bootstrap "$@"
 
-envfile="$1"
-
-if [[ "$envfile" = "" ]]; then
-	envfile="./docker-backup.env"
-fi
-
-readenvironmentfile "$envfile"
-
-if [ "$EUID" -ne 0 ]; then
-	log "fatal" "Cannot start. Process must be run as root user or via sudo."
-	notify "docker-backup" "FATAL: Cannot start. Process must be run as root user or via sudo." "failure"
-	exit 1
-fi
-
-if pidof "docker-backup.sh" >/dev/null; then
-	log "fatal" "Cannot start. Backup process is already running."
-	notify "docker-backup" "FATAL: Cannot start. Backup process is already running." "failure"
-	exit 1
-fi
-
-main "$@"
 exit 0
