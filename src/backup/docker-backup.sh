@@ -242,6 +242,12 @@ function getvolumelabelvalue() {
 	echo "$value"
 }
 
+function getcontainersusingvolume() {
+	local volume
+	volume="$1"
+	docker container inspect $(docker ps --no-trunc -q) -f  "{{\$v:=.Name}}{{ range .Mounts }}{{ if eq .Type \"volume\" }}{{ if eq .Name \"$volume\" }}{{\$v}}{{printf \"\\n\"}}{{ end }}{{ end }}{{ end }}" | cut -c2- | grep -v '^$' | sort
+}
+
 function getcontainerlabelvalue() {
 	local container
 	local label
@@ -640,7 +646,27 @@ function dockerbackup() {
 			;;
 		volume)
 			filename="$target"/"$containername"/volumes/"$volumename""$(tarext)"
-			backupvolumebypath "$volumename" "$filename"
+
+			if [[ "$BACKUP_PAUSECONTAINERS" = "true" ]]; then
+				log "trace" "Stopping containers using volume $volumename before volume backup"
+				volumecontainers=$(getcontainersusingvolume "$volumename") 
+
+				echo "$volumecontainers" | while IFS= read -r volumecontainer; do
+					log "trace" "Stopping container $volumecontainer to backup volume $volumename"
+					docker stop "$volumecontainer"
+				done
+
+				backupvolumebypath "$volumename" "$filename"
+
+				log "trace" "Starting containers using volume $volumename after volume backup"
+
+				echo "$volumecontainers" | while IFS= read -r volumecontainer; do
+ 					log "trace" "Starting container $volumecontainer after backup volume $volumename"
+					docker start "$volumecontainer"
+ 				done
+			else
+				backupvolumebypath "$volumename" "$filename"
+			fi
 			;;
 		esac
 	done
