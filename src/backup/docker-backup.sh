@@ -20,6 +20,10 @@ function log() {
 	logcolours=([fatal]="\e[1;31m" [error]="\e[31m" [warn]="\e[1;37m" [info]="\e[1;33m" [debug]="\e[0m" [trace]="\e[0m")
 	configloglevel="$BACKUP_LOGLEVEL"
 
+	if [ ! -f "$LOGFILENAME" ]; then
+		echo "" > "$LOGFILENAME"
+	fi
+
 	if [[ "$configloglevel" = "" ]]; then
 		configloglevel="trace"
 	fi
@@ -34,6 +38,7 @@ function log() {
 
 	if [[ ("$level" -lt "$configuredlevel") || ("$level" = "$configuredlevel") ]]; then
 		printf "%b%s %s : %s \e[0m\n" "$colour" "$(date '+%Y-%m-%d %H:%M:%S')" "${padding:${#levelstr}}$levelstr" "$message"
+		printf "%b%s %s : %s \e[0m\n" "$colour" "$(date '+%Y-%m-%d %H:%M:%S')" "${padding:${#levelstr}}$levelstr" "$message" >> "$LOGFILENAME"
 	fi
 
 	if [[ "$NOTIF_LOGLEVEL" != "" ]]; then
@@ -498,7 +503,7 @@ function containerwhich() {
 	cmd="$2"
 	result=$(docker exec "$id" sh -c "which $cmd 2> /dev/null")
 
-	if echoo "$result" | grep -q "exec failed"; then
+	if echo "$result" | grep -q "exec failed"; then
 		echo ""
 	else
 		echo "$result"
@@ -678,7 +683,7 @@ function backupsystem() {
 
 function main() {
 	containertobackup="$1"
-	backuptarget="$BACKUP_STORE"/"$(date '+%Y%m%d-%H%M')"
+	backuptarget="$BACKUP_STORE"/"$BACKUPDATE"
 	mkdir -p "$backuptarget"
 
 	if [[ "$BACKUP_RETENTION_DAYS" != "" ]]; then
@@ -714,6 +719,14 @@ function main() {
 	notify "docker-backup" "Backup operation finished" "success"
 	log "trace" "Finished."
 }
+
+
+BACKUPDATE="$(date '+%Y%m%d-%H%M')"
+LOGFILENAME="/logs/docker-backup-""$BACKUPDATE"".log"
+
+if [ ! -f "$LOGFILENAME" ]; then
+ echo "" > "$LOGFILENAME"
+fi
 
 envfile="$1"
 
