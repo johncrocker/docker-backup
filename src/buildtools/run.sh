@@ -10,7 +10,7 @@ cd $HOME/src/docker-backup/src
 docker buildx build . \
 	-t "crockerish/docker-backup:$version"
 
-docker run -it --rm --name docker-backup \
+docker run -it --rm --name docker-backup-test \
 	--env-file ./backup/docker-backup-container.env \
 	-e TZ=Europe/London \
 	-e DOCKER_BACKUP_CONTAINERS=mongo-db \
