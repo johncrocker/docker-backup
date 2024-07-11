@@ -10,6 +10,7 @@ if [ -f /.dockerenv ]; then
 	export BACKUP_SOURCE="/source"
 fi
 
+BACKUPDATE="$(date '+%Y%m%d-%H%M')"
 LOGFILENAME="/logs/docker-backup-""$BACKUPDATE"".log"
 
 if [ ! -f "$LOGFILENAME" ]; then
