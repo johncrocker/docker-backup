@@ -38,7 +38,7 @@ function log() {
 
 	if [[ ("$level" -lt "$configuredlevel") || ("$level" = "$configuredlevel") ]]; then
 		printf "%b%s %s : %s \e[0m\n" "$colour" "$(date '+%Y-%m-%d %H:%M:%S')" "${padding:${#levelstr}}$levelstr" "$message"
-		printf "%b%s %s : %s \e[0m\n" "$colour" "$(date '+%Y-%m-%d %H:%M:%S')" "${padding:${#levelstr}}$levelstr" "$message" >>"$LOGFILENAME"
+		printf "%s %s : %s\n" "$(date '+%Y-%m-%d %H:%M:%S')" "${padding:${#levelstr}}$levelstr" "$message" >>"$LOGFILENAME"
 	fi
 
 	if [[ "$NOTIF_LOGLEVEL" != "" ]]; then
