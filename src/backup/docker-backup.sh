@@ -88,6 +88,32 @@ function tarext() {
 	fi
 }
 
+function pushover_notify() {
+	local title
+	local message
+	local priority
+	local type
+	title="$1"
+	message="$2"
+	priority="$NOTIF_PUSHOVER_PRIORITY"
+	silent="$4"
+	type="$3"
+
+	if [[ "$NOTIF_PUSHOVER_ENABLE" = "true" ]]; then
+		if [ -z "$silent" ]; then
+			log "trace" "Notifying via Gotify"
+		fi
+
+		curl -S -s -o /dev/null \
+			--form-string "token=$NOTIF_PUSHOVER_APP_TOKEN" \
+			--form-string "user=$NOTIF_PUSHOVER_USER_KEY" \
+			--form-string "message=$message" \
+			--form-string "title=$title" \
+			--form-string "priority=$priority" \
+			https://api.pushover.net/1/messages.json
+	fi
+}
+
 function apprise_notify() {
 	local title
 	local message
@@ -202,6 +228,7 @@ function notify() {
 	discord_notify "$title" "$message" "$type" "$silent"
 	apprise_notify "$title" "$message" "$type" "$silent"
 	mattermost_notify "$title" "$message" "$type" "$silent"
+	pushover_notify "$title" "$message" "$type" "$silent"
 }
 
 function getvolumelabelvalue() {
