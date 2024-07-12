@@ -721,11 +721,12 @@ function main() {
 
 	if [[ "$BACKUP_RETENTION_DAYS" != "" ]]; then
 		log "debug" "Deleting backup sets older than $BACKUP_RETENTION_DAYS days"
-		count=$(find "$BACKUP_STORE"/* -maxdepth 0 -type d -ctime +"$BACKUP_RETENTION_DAYS" | wc -l)
+		ctime="$(($BACKUP_RETENTION_DAYS-1))"
+		count=$(find "$BACKUP_STORE"/* -maxdepth 0 -type d -ctime +"$ctime" | wc -l)
 
 		if [[ count -ge 1 ]]; then
 			log "debug" "Found $count backup sets to delete."
-			find "$BACKUP_STORE"/* -maxdepth 0 -type d -ctime +"$BACKUP_RETENTION_DAYS" -exec rm -rf {} +
+			find "$BACKUP_STORE"/* -maxdepth 0 -type d -ctime +"$ctime" -exec rm -rf {} +
 		else
 			log "debug" "No old backup sets found"
 		fi
