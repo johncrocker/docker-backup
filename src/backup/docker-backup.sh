@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
-# shellcheck disable=SC2317  # Don't warn about unreachable commands in this file
-# shellcheck disable=SC1090 #  Can't follow non-constant source. Use a directive to specify location
+# shellcheck disable=SC2317 # Don't warn about unreachable commands in this file
+# shellcheck disable=SC1090 # Can't follow non-constant source. Use a directive to specify location
+# shellcheck disable=SC2002 # Useless cat. Consider cmd < file | .. or cmd file | .. instead.
 
 function log() {
 	declare -A loglevels
@@ -237,6 +238,7 @@ function notify() {
 	silent="$4"
 	type="$3"
 
+	[ "$PARAM_SIMULATE" = "true" ] && (title="$1 (Simulate)")
 	if [ -z "$type" ]; then
 		type="info"
 	fi
@@ -331,12 +333,15 @@ function backupnetworks() {
 	targetdir=$(realpath "$(dirname "$target")")
 	targetfile=$(basename "$target")
 
-	mkdir -p "$targetdir"
-	touch "$target"
-	for networkid in $(docker network ls -q --no-trunc); do
-		getnetwork "$networkid" >>"$target"
-		echo "" >>"$target"
-	done
+        log "trace" "Backing up networks to $target"
+	if [[ "$PARAM_SIMULATE" = "" ]]; then
+		mkdir -p "$targetdir"
+		touch "$target"
+		for networkid in $(docker network ls -q --no-trunc); do
+			getnetwork "$networkid" >>"$target"
+			echo "" >>"$target"
+		done
+	fi
 }
 
 function getcontainermounts() {
@@ -370,6 +375,8 @@ function backupworkingdir() {
 	targetfile=$(basename "$target")
 
 	log "trace" "Backing up working directory"
+
+	if [[ "$PARAM_SIMULATE" = "" ]]; then
 	mkdir -p "$targetdir"
 
 	case "$targetfile" in
@@ -386,6 +393,8 @@ function backupworkingdir() {
 		tar -cf "$target" -C "$workingdir" .
 		;;
 	esac
+	fi
+
 }
 
 function backupvolumebypath() {
@@ -400,8 +409,10 @@ function backupvolumebypath() {
 	targetfile=$(basename "$target")
 	volumepath="$BACKUP_SOURCE"$(docker volume ls --format '{{.Mountpoint}}' -f "Name=$volume")
 
-	mkdir -p "$targetdir"
 	log "trace" "Backing up volume mount $volume"
+
+	if [[ "$PARAM_SIMULATE" = "" ]]; then
+	mkdir -p "$targetdir"
 
 	if [ ! -d "$volumepath" ]; then
 		log "warn" "Cannot reach mount via filesystem. Using Docker method."
@@ -425,6 +436,7 @@ function backupvolumebypath() {
 		tar -cf "$target" -C "$volumepath" .
 		;;
 	esac
+	fi
 
 }
 
@@ -438,9 +450,10 @@ function backupvolumewithdocker() {
 	targetdir=$(realpath "$(dirname "$target")")
 	targetfile=$(basename "$target")
 
-	mkdir -p "$targetdir"
 	log "trace" "Backing up volume mount $volume"
 
+	if [[ "$PARAM_SIMULATE" = "" ]]; then
+	mkdir -p "$targetdir"
 	case "$targetfile" in
 	*.tar.gz)
 		docker run --rm --name volumebackup \
@@ -469,7 +482,7 @@ function backupvolumewithdocker() {
 			tar -cf - -C /source/ . >"$target"
 		;;
 	esac
-
+	fi
 }
 
 function backupbind() {
@@ -482,8 +495,10 @@ function backupbind() {
 	targetdir=$(realpath "$(dirname "$target")")
 	targetfile=$(basename "$target")
 
-	mkdir -p "$targetdir"
 	log "trace" "Backing up bind mount $source"
+
+	if [[ "$PARAM_SIMULATE" = "" ]]; then
+	mkdir -p "$targetdir"
 
 	case "$targetfile" in
 	*.tar.gz)
@@ -499,7 +514,7 @@ function backupbind() {
 		tar -cf "$target" -C "$source" .
 		;;
 	esac
-
+	fi
 }
 
 function commitcontainer() {
@@ -514,10 +529,12 @@ function commitcontainer() {
 	targetdir=$(realpath "$(dirname "$target")")
 	targetfile=$(basename "$target")
 	containername=$(docker container inspect "$id" --format '{{.Name}}' | cut -c2-)
-
-	mkdir -p "$targetdir"
 	tag="docker-backup/$containername:latest"
-	log "trace" "Committing container $containername to local registry as $tag"
+
+ 	log "trace" "Committing container $containername to local registry as $tag"
+ 
+	if [[ "$PARAM_SIMULATE" = "" ]]; then
+	mkdir -p "$targetdir"
 	docker container commit "$id" "$tag"
 
 	case "$targetfile" in
@@ -528,6 +545,7 @@ function commitcontainer() {
 	esac
 
 	docker image rm "$tag"
+	fi
 }
 
 function containerwhich() {
@@ -562,15 +580,17 @@ function backuppostgres() {
 	if [ -z "$cmd" ]; then
 		log "error" "Cannot Backup postgres data in $containername, pg_dumpall missing"
 	else
-		mkdir -p "$targetdir"
 		log "trace" "Backing up postgres data in $containername"
 
+		if [[ "$PARAM_SIMULATE" = "" ]]; then
+		mkdir -p "$targetdir"
 		case "$targetfile" in
 		*.sql.gz) docker exec "$id" sh -c 'pg_dumpall --inserts -U $POSTGRES_USER ' | gzip >"$target" ;;
 		*.sql.xz) docker exec "$id" sh -c 'pg_dumpall --inserts -U $POSTGRES_USER ' | xz -z "$BACKUP_COMPRESS_XZ_OPT" - >"$target" ;;
 		*.sql.bz2) docker exec "$id" sh -c 'pg_dumpall --inserts -U $POSTGRES_USER ' | bzip2 -z "$BACKUP_COMPRESS_BZ2_OPT" - >"$target" ;;
 		*) docker exec "$id" sh -c 'pg_dumpall --inserts -U $POSTGRES_USER ' >"$target" ;;
 		esac
+		fi
 	fi
 
 }
@@ -592,15 +612,17 @@ function backupmariadb() {
 	if [ -z "$cmd" ]; then
 		log "error" "Cannot Backup mariadb data in $containername, mariadb-dump missing"
 	else
-		mkdir -p "$targetdir"
 		log "trace" "Backing up mariadb data in $containername"
 
+		 if [[ "$PARAM_SIMULATE" = "" ]]; then
+		mkdir -p "$targetdir"
 		case "$targetfile" in
 		*.sql.gz) docker exec "$id" sh -c 'mariadb-dump -u root  --all-databases' | gzip >"$target" ;;
 		*.sql.xz) docker exec "$id" sh -c 'mariadb-dump -u root  --all-databases' | xz -z "$BACKUP_COMPRESS_XZ_OPT" - >"$target" ;;
 		*.sql.bz2) docker exec "$id" sh -c 'mariadb-dump -u root  --all-databases' | bzip2 -z "$BACKUP_COMPRESS_BZ2_OPT" - >"$target" ;;
 		*) docker exec "$id" sh -c 'mariadb-dump -u root  --all-databases' >"$target" ;;
 		esac
+		fi
 	fi
 
 }
@@ -617,16 +639,17 @@ function backupcontainer() {
 	targetfile=$(basename "$target")
 	containername=$(docker container inspect "$id" --format '{{.Name}}' | cut -c2-)
 
-	mkdir -p "$targetdir"
 	log "trace" "Backing up container $containername"
 
+	 if [[ "$PARAM_SIMULATE" = "" ]]; then
+	mkdir -p "$targetdir"
 	case "$targetfile" in
 	*.tar.gz) docker container export "$id" | gzip >"$target" ;;
 	*.tar.xz) docker container export "$id" | xz -z "$BACKUP_COMPRESS_XZ_OPT" - >"$target" ;;
 	*.tar.bz2) docker container export "$id" | bzip2 -z "$BACKUP_COMPRESS_BZ2_OPT" - >"$target" ;;
 	*) docker container export "$id" >"$target" ;;
 	esac
-
+	fi
 }
 
 function dockerbackup() {
@@ -657,8 +680,10 @@ function dockerbackup() {
 		return 1
 	fi
 
+	if [[ "$PARAM_SIMULATE" = "" ]]; then
 	mkdir -p "$target"/"$containername"/"volumes"
 	mkdir -p "$target"/"$containername"/"binds"
+	fi
 
 	log "trace" "Backing up volumes for $containername"
 
@@ -682,7 +707,7 @@ function dockerbackup() {
 
 				echo "$volumecontainers" | while IFS= read -r volumecontainer; do
 					log "trace" "Stopping container $volumecontainer to backup volume $volumename"
-					docker stop "$volumecontainer"
+					[ "$PARAM_SIMULATE" = "" ] && (docker stop "$volumecontainer")
 				done
 
 				backupvolumebypath "$volumename" "$filename"
@@ -691,7 +716,7 @@ function dockerbackup() {
 
 				echo "$volumecontainers" | while IFS= read -r volumecontainer; do
 					log "trace" "Starting container $volumecontainer after backup volume $volumename"
-					docker start "$volumecontainer"
+					[ "$PARAM_SIMULATE" = "" ] && (docker start "$volumecontainer")
 				done
 			else
 				backupvolumebypath "$volumename" "$filename"
@@ -714,6 +739,7 @@ function dockerbackup() {
 		backupworkingdir "$workingdir" "$target"/"$containername"/"working_dir$(tarext)"
 	fi
 
+	if [[ "$PARAM_SIMULATE" = "" ]]; then
 	if [[ "$envfile" != "" ]]; then
 		filename=$(basename "$envfile")
 		cp "$BACKUP_SOURCE""$envfile" "$target"/"$containername"/"$filename"
@@ -722,6 +748,7 @@ function dockerbackup() {
 	if [[ "$configfile" != "" ]]; then
 		filename=$(basename "$configfile")
 		cp "$BACKUP_SOURCE""$configfile" "$target"/"$containername"/"$filename"
+	fi
 	fi
 }
 
@@ -732,27 +759,45 @@ function backupsystem() {
 	docker version -f 'json' | jq >"$backuptarget"/version.json
 
 	if [ -f "$BACKUP_SOURCE"/etc/docker/daemon.json ]; then
-		cat "$BACKUP_SOURCE"/etc/docker/daemon.json | jq >"$backuptarget"/daemon.json
+		log "trace" "Backing up daemon.json"
+		[ "$PARAM_SIMULATE" = "" ] && (cat "$BACKUP_SOURCE"/etc/docker/daemon.json | jq >"$backuptarget"/daemon.json)
 	fi
 
 	if [ -f "$BACKUP_SOURCE""$HOME"/.docker/config.json ]; then
-		sudo cat "$BACKUP_SOURCE""$HOME"/.docker/config.json | jq >"$backuptarget"/config.json
+		log "trace" "Baking up config.json"
+		[ "$PARAM_SIMULATE" = "" ] && (cat "$BACKUP_SOURCE""$HOME"/.docker/config.json | jq >"$backuptarget"/config.json)
 	fi
 }
 
+function parsearguments()
+{	PARAM_SIMULATE=""
+
+	for arg in "$@"; do
+		key=$(echo "$arg" | cut -c 3- | cut -d "=" -f1)
+		value=$(echo "$arg" | cut -d "=" -f2-)
+	case "$key" in
+		simulate)
+			log "trace" "Simulating a backup - not writing any data"
+			PARAM_SIMULATE="true"
+			;;
+	esac
+	done
+}
+
 function main() {
-	containertobackup="$1"
+	containertobackup="$BACKUP_CONTAINERS"
 	backuptarget="$BACKUP_STORE"/"$BACKUPDATE"
 	mkdir -p "$backuptarget"
+	parsearguments "$@"
 
 	if [[ "$BACKUP_RETENTION_DAYS" != "" ]]; then
 		log "debug" "Deleting backup sets older than $BACKUP_RETENTION_DAYS days"
-		ctime="$(($BACKUP_RETENTION_DAYS-1))"
+		ctime=$(("$BACKUP_RETENTION_DAYS"-1))
 		count=$(find "$BACKUP_STORE"/* -maxdepth 0 -type d -ctime +"$ctime" | wc -l)
 
 		if [[ count -ge 1 ]]; then
 			log "debug" "Found $count backup sets to delete."
-			find "$BACKUP_STORE"/* -maxdepth 0 -type d -ctime +"$ctime" -exec rm -rf {} +
+			[ "$PARAM_SIMULATE" = "" ] && (find "$BACKUP_STORE"/* -maxdepth 0 -type d -ctime +"$ctime" -exec rm -rf {} +)
 		else
 			log "debug" "No old backup sets found"
 		fi
