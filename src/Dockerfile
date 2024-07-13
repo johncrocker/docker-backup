@@ -50,9 +50,11 @@ ENV NOTIF_PUSHOVER_PRIORITY="0"
 WORKDIR /app
 
 COPY ./backup/docker-backup.sh /app/docker-backup.sh
+COPY ./backup/docker-backup-cron.sh /app/docker-backup-cron.sh
 COPY ./entrypoint.sh /app/entrypoint.sh
 
 RUN chmod +x /app/docker-backup.sh
+RUN chmod +x /app/docker-backup-cron.sh 
 RUN chmod +x /app/entrypoint.sh
 
 ENTRYPOINT [ "/bin/sh", "-c", "/app/entrypoint.sh" ]
