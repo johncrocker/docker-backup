@@ -703,6 +703,7 @@ function dockerbackup() {
 			;;
 		volume)
 			filename="$target"/"$containername"/volumes/"$volumename""$(tarext)"
+			log "trace" "Output file: $filename"
 
 			if [[ "$BACKUP_PAUSECONTAINERS" = "true" ]]; then
 				log "trace" "Stopping containers using volume $volumename before volume backup"
@@ -790,8 +791,14 @@ function parsearguments() {
 function main() {
 	containertobackup="$BACKUP_CONTAINERS"
 	backuptarget="$BACKUP_STORE"/"$BACKUPDATE"
-	mkdir -p "$backuptarget"
+
 	parsearguments "$@"
+
+	if [[ "$PARAM_SIMULATE" = "" ]]; then
+		mkdir -p "$backuptarget"
+	fi
+
+	log "trace" "Backup output folder: $backuptarget"
 
 	if [[ "$BACKUP_RETENTION_DAYS" != "" ]]; then
 		log "debug" "Deleting backup sets older than $BACKUP_RETENTION_DAYS days"

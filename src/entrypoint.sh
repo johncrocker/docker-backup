@@ -30,7 +30,9 @@ if [ "$BACKUP_RUN_ONCE" = "true" ]; then
 	fi
 
 	echo "Starting run-once then shutdown"
-	./docker-backup.sh "$@"  2>&1 | tee "$LOGFILENAME"
+	echo "Arguments: $@"
+	echo ""
+	./docker-backup.sh "$@" 2>&1 | tee "$LOGFILENAME"
 else
 	if [ -f /etc/cron.schedule/crontab ]; then
 		echo "Loading crontab settings"

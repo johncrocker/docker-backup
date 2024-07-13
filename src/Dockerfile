@@ -59,4 +59,5 @@ RUN chmod +x /app/docker-backup.sh
 RUN chmod +x /app/docker-backup-cron.sh 
 RUN chmod +x /app/entrypoint.sh
 
-ENTRYPOINT [ "/bin/sh", "-c", "/app/entrypoint.sh" ]
+ENTRYPOINT [ "/app/entrypoint.sh" ]
+CMD [ "--backup" ]
