@@ -45,6 +45,15 @@ function log() {
 	fi
 }
 
+function gettargetdir() {
+	local target
+	local targetdir
+	target="$1"
+	targetdir="$(dirname "$target")"
+	targetdir=$(realpath -q "$(dirname "$target")" 2>/dev/null)
+	echo "$targetdir"
+}
+
 function compext() {
 
 	if [[ "$BACKUP_COMPRESS" = "true" ]]; then
@@ -333,7 +342,7 @@ function backupnetworks() {
 	local targetfile
 	local targetdir
 	target="$1"
-	targetdir=$(realpath "$(dirname "$target")")
+	targetdir=$(gettargetdir "$target")
 	targetfile=$(basename "$target")
 
 	log "trace" "Backing up networks to $target"
@@ -374,7 +383,7 @@ function backupworkingdir() {
 	local targetfile
 	workingdir="$BACKUP_SOURCE""$1"
 	target="$2"
-	targetdir=$(realpath "$(dirname "$target")")
+	targetdir=$(gettargetdir "$target")
 	targetfile=$(basename "$target")
 
 	log "trace" "Backing up working directory"
@@ -408,7 +417,12 @@ function backupvolumebypath() {
 	local targetfile
 	volume="$1"
 	target="$2"
-	targetdir=$(realpath "$(dirname "$target")")
+
+	targetdir="$(dirname "$target")"
+	if [ -d "$targetdir" ]; then
+		targetdir=$(gettargetdir "$target")
+	fi
+
 	targetfile=$(basename "$target")
 	volumepath="$BACKUP_SOURCE"$(docker volume ls --format '{{.Mountpoint}}' -f "Name=$volume")
 
@@ -450,7 +464,7 @@ function backupvolumewithdocker() {
 	local targetfile
 	volume="$1"
 	target="$2"
-	targetdir=$(realpath "$(dirname "$target")")
+	targetdir=$(gettargetdir "$target")
 	targetfile=$(basename "$target")
 
 	log "trace" "Backing up volume mount $volume"
@@ -495,7 +509,7 @@ function backupbind() {
 	local targetfile
 	source="$1"
 	target="$2"
-	targetdir=$(realpath "$(dirname "$target")")
+	targetdir=$(gettargetdir "$target")
 	targetfile=$(basename "$target")
 
 	log "trace" "Backing up bind mount $source"
@@ -529,7 +543,7 @@ function commitcontainer() {
 	local tag
 	id="$1"
 	target="$2"
-	targetdir=$(realpath "$(dirname "$target")")
+	targetdir=$(gettargetdir "$target")
 	targetfile=$(basename "$target")
 	containername=$(docker container inspect "$id" --format '{{.Name}}' | cut -c2-)
 	tag="docker-backup/$containername:latest"
@@ -575,7 +589,7 @@ function backuppostgres() {
 	local cmd
 	id="$1"
 	target="$2"
-	targetdir=$(realpath "$(dirname "$target")")
+	targetdir=$(gettargetdir "$target")
 	targetfile=$(basename "$target")
 	containername=$(docker container inspect "$id" --format '{{.Name}}' | cut -c2-)
 	cmd=$(containerwhich "$id" "pg_dumpall")
@@ -607,7 +621,7 @@ function backupmariadb() {
 	local cmd
 	id="$1"
 	target="$2"
-	targetdir=$(realpath "$(dirname "$target")")
+	targetdir=$(gettargetdir "$target")
 	targetfile=$(basename "$target")
 	containername=$(docker container inspect "$id" --format '{{.Name}}' | cut -c2-)
 	cmd=$(containerwhich "$id" "mariadb-dump")
@@ -638,7 +652,7 @@ function backupcontainer() {
 	local containername
 	id="$1"
 	target="$2"
-	targetdir=$(realpath "$(dirname "$target")")
+	targetdir=$(gettargetdir "$target")
 	targetfile=$(basename "$target")
 	containername=$(docker container inspect "$id" --format '{{.Name}}' | cut -c2-)
 
