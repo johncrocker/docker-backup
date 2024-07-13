@@ -1,12 +1,21 @@
 FROM alpine:3.20.1
 
-RUN apk add --no-cache curl jq xz docker bash tzdata bzip2
+RUN apk add --no-cache curl jq xz docker bash tzdata bzip2 run-parts
 
 VOLUME /source
 VOLUME /target
 VOLUME /logs
 
+RUN mkdir -p /etc/cron.schedule/cron.hourly
+RUN mkdir -p /etc/cron.schedule/cron.daily
+RUN mkdir -p /etc/cron.schedule/cron.weekly
+RUN mkdir -p /etc/cron.schedule/cron.monthly
+
+COPY ./crontab.txt /etc/crontab.default
+VOLUME /etc/cron.schedule
+
 ENV TZ=UTC
+ENV BACKUP_RUN_ONCE="true"
 ENV BACKUP_PAUSECONTAINERS="false"
 ENV BACKUP_LOGLEVEL="trace"
 ENV BACKUP_STORE="/target"
@@ -42,8 +51,8 @@ WORKDIR /app
 
 COPY ./backup/docker-backup.sh /app/docker-backup.sh
 COPY ./entrypoint.sh /app/entrypoint.sh
+
 RUN chmod +x /app/docker-backup.sh
 RUN chmod +x /app/entrypoint.sh
 
 ENTRYPOINT [ "/bin/sh", "-c", "/app/entrypoint.sh" ]
-

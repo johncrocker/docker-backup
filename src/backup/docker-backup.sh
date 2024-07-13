@@ -709,8 +709,12 @@ function backupsystem() {
 	docker system info -f 'json' | jq >"$backuptarget"/dockersystem.json
 	docker version -f 'json' | jq >"$backuptarget"/version.json
 
-	if [ -f "$HOME"/.docker/config.json ]; then
-		sudo cat "$HOME"/.docker/config.json | jq >"$backuptarget"/config.json
+	if [ -f "$BACKUP_SOURCE"/etc/docker/daemon.json ]; then
+		cat "$BACKUP_SOURCE"/etc/docker/daemon.json | jq >"$backuptarget"/daemon.json
+	fi
+
+	if [ -f "$BACKUP_SOURCE""$HOME"/.docker/config.json ]; then
+		sudo cat "$BACKUP_SOURCE""$HOME"/.docker/config.json | jq >"$backuptarget"/config.json
 	fi
 }
 
