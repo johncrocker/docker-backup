@@ -13,6 +13,15 @@ fi
 BACKUPDATE="$(date '+%Y%m%d-%H%M')"
 LOGFILENAME="/logs/docker-backup-""$BACKUPDATE"".log"
 
+mkdir -p /etc/cron.schedule/cron.hourly
+mkdir -p /etc/cron.schedule/cron.daily
+mkdir -p /etc/cron.schedule/cron.weekly
+mkdir -p /etc/cron.schedule/cron.monthly
+
+if [ ! -f /cron.schedule/crontab ]; then
+	cp /etc/crontab.default /etc/cron.schedule/crontab
+fi
+
 cd /app
 
 if [ "$BACKUP_RUN_ONCE" = "true" ]; then

@@ -6,12 +6,12 @@ VOLUME /source
 VOLUME /target
 VOLUME /logs
 
-RUN mkdir -p etc/cron.schedule/cron.hourly
+RUN mkdir -p /etc/cron.schedule/cron.hourly
 RUN mkdir -p /etc/cron.schedule/cron.daily
 RUN mkdir -p /etc/cron.schedule/cron.weekly
 RUN mkdir -p /etc/cron.schedule/cron.monthly
 
-COPY ./crontab.txt /etc/cron.schedule/crontab
+COPY ./crontab.txt /etc/crontab.default
 VOLUME /etc/cron.schedule
 
 ENV TZ=UTC
