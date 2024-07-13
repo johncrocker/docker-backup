@@ -427,7 +427,7 @@ function backupvolumebypath() {
 
 		case "$targetfile" in
 		*.tar.gz)
-			tar -czf "$target" -C "$volumepath" .
+			tar -cf - -C "$volumepath" . | gzip "$BACKUP_COMPRESS_GZ_OPT" - > "$target"
 			;;
 		*.tar.bz2)
 			tar -cf - -C "$volumepath" . | bzip2 -z "$BACKUP_COMPRESS_BZ2_OPT" - >"$target"
@@ -462,7 +462,7 @@ function backupvolumewithdocker() {
 			docker run --rm --name volumebackup \
 				-v "$volume":/source:ro \
 				"$BACKUP_DOCKERIMAGE" \
-				tar -cf - -C /source/ . | gzip >"$target"
+				tar -cf - -C /source/ . | gzip "$BACKUP_COMPRESS_GZ_OPT" - >"$target"
 			;;
 		*.tar.bz2)
 			docker run --rm --name volumebackup \
@@ -541,7 +541,7 @@ function commitcontainer() {
 		docker container commit "$id" "$tag"
 
 		case "$targetfile" in
-		*.tar.gz) docker image save "$tag" | gzip >"$target" ;;
+		*.tar.gz) docker image save "$tag" | gzip "$BACKUP_COMPRESS_GZ_OPT" - >"$target" ;;
 		*.tar.bz2) docker image save "$tag" | bzip2 -z "$BACKUP_COMPRESS_BZ2_OPT" - >"$target" ;;
 		*.tar.xz) docker image save "$tag" | xz -z "$BACKUP_COMPRESS_XZ_OPT" - >"$target" ;;
 		*) docker image save "$tag" >"$target" ;;
@@ -588,7 +588,7 @@ function backuppostgres() {
 		if [[ "$PARAM_SIMULATE" = "" ]]; then
 			mkdir -p "$targetdir"
 			case "$targetfile" in
-			*.sql.gz) docker exec "$id" sh -c 'pg_dumpall --inserts -U $POSTGRES_USER ' | gzip >"$target" ;;
+			*.sql.gz) docker exec "$id" sh -c 'pg_dumpall --inserts -U $POSTGRES_USER ' | gzip "$BACKUP_COMPRESS_GZ_OPT" - >"$target" ;;
 			*.sql.xz) docker exec "$id" sh -c 'pg_dumpall --inserts -U $POSTGRES_USER ' | xz -z "$BACKUP_COMPRESS_XZ_OPT" - >"$target" ;;
 			*.sql.bz2) docker exec "$id" sh -c 'pg_dumpall --inserts -U $POSTGRES_USER ' | bzip2 -z "$BACKUP_COMPRESS_BZ2_OPT" - >"$target" ;;
 			*) docker exec "$id" sh -c 'pg_dumpall --inserts -U $POSTGRES_USER ' >"$target" ;;
@@ -620,7 +620,7 @@ function backupmariadb() {
 		if [[ "$PARAM_SIMULATE" = "" ]]; then
 			mkdir -p "$targetdir"
 			case "$targetfile" in
-			*.sql.gz) docker exec "$id" sh -c 'mariadb-dump -u root  --all-databases' | gzip >"$target" ;;
+			*.sql.gz) docker exec "$id" sh -c 'mariadb-dump -u root  --all-databases' | gzip "$BACKUP_COMPRESS_GZ_OPT" - >"$target" ;;
 			*.sql.xz) docker exec "$id" sh -c 'mariadb-dump -u root  --all-databases' | xz -z "$BACKUP_COMPRESS_XZ_OPT" - >"$target" ;;
 			*.sql.bz2) docker exec "$id" sh -c 'mariadb-dump -u root  --all-databases' | bzip2 -z "$BACKUP_COMPRESS_BZ2_OPT" - >"$target" ;;
 			*) docker exec "$id" sh -c 'mariadb-dump -u root  --all-databases' >"$target" ;;
@@ -647,7 +647,7 @@ function backupcontainer() {
 	if [[ "$PARAM_SIMULATE" = "" ]]; then
 		mkdir -p "$targetdir"
 		case "$targetfile" in
-		*.tar.gz) docker container export "$id" | gzip >"$target" ;;
+		*.tar.gz) docker container export "$id" | gzip "$BACKUP_COMPRESS_GZ_OPT" - >"$target" ;;
 		*.tar.xz) docker container export "$id" | xz -z "$BACKUP_COMPRESS_XZ_OPT" - >"$target" ;;
 		*.tar.bz2) docker container export "$id" | bzip2 -z "$BACKUP_COMPRESS_BZ2_OPT" - >"$target" ;;
 		*) docker container export "$id" >"$target" ;;

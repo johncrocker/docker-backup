@@ -22,6 +22,7 @@ ENV BACKUP_STORE="/target"
 ENV BACKUP_SOURCE="/source"
 ENV BACKUP_COMPRESS="false"
 ENV BACKUP_COMPRESS_METHOD="gzip"
+ENV BACKUP_COMPRESS_GZ_OPT="-6"
 ENV BACKUP_COMPRESS_XZ_OPT=-"2 -T0"
 ENV BACKUP_COMPRESS_BZ2_OPT=""
 ENV BACKUP_DOCKERIMAGE="alpine:3.20.1"
@@ -51,9 +52,9 @@ ENV NOTIF_SLACK_WEBHOOK_URL=""
 
 WORKDIR /app
 
-COPY ./backup/docker-backup.sh /app/docker-backup.sh
-COPY ./backup/docker-backup-cron.sh /app/docker-backup-cron.sh
-COPY ./entrypoint.sh /app/entrypoint.sh
+COPY ./build/docker-backup.sh /app/docker-backup.sh
+COPY ./build/docker-backup-cron.sh /app/docker-backup-cron.sh
+COPY ./build/entrypoint.sh /app/entrypoint.sh
 
 RUN chmod +x /app/docker-backup.sh
 RUN chmod +x /app/docker-backup-cron.sh 

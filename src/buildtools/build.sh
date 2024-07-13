@@ -15,14 +15,9 @@ else
 	exit
 fi
 
-shfmt ./backup/docker-backup.sh >./backup/docker-backup.new
-
-if [[ "$?" -eq 0 ]]; then
-	mv ./backup/docker-backup.new ./backup/docker-backup.sh
-else
-	rm ./backup/docker-backup.new
-	exit
-fi
+shfmt ./backup/docker-backup.sh > ./build/docker-backup.sh
+shfmt ./backup/docker-backup-cron.sh > ./build/docker-backup-cron.sh
+shfmt ./entrypoint.sh > ./build/entrypoint.sh
 
 docker buildx build . \
 	-t "crockerish/docker-backup:$version"
