@@ -18,4 +18,5 @@ docker run -it --rm --name docker-backup-test \
 	-v /:/source:ro \
 	-v /media/external/docker-backup:/target \
 	-v $HOME/logs:/logs \
-	"crockerish/docker-backup:$version"
+	"crockerish/docker-backup:$version" \
+	--simulate
