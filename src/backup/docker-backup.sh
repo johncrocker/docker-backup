@@ -88,6 +88,27 @@ function tarext() {
 	fi
 }
 
+function slack_webhook() {
+	local title
+	local message
+	local type
+	title="$1"
+	message="$2"
+	silent="$4"
+	type="$3"
+
+	if [[ "$NOTIF_SLACK_WEBHOOK_ENABLE" = "true" ]]; then
+		if [ -z "$silent" ]; then
+			log "trace" "Notifying via Slack Webhook"
+		fi
+
+		curl -S -s -o /dev/null -X POST \
+		-H 'Content-type: application/json' \
+		--data "{\"text\":\"$title\n$message\"}" \
+		"$NOTIF_SLACK_WEBHOOK_URL"
+	fi
+}
+
 function pushover_notify() {
 	local title
 	local message
@@ -101,7 +122,7 @@ function pushover_notify() {
 
 	if [[ "$NOTIF_PUSHOVER_ENABLE" = "true" ]]; then
 		if [ -z "$silent" ]; then
-			log "trace" "Notifying via Gotify"
+			log "trace" "Notifying via Pushover"
 		fi
 
 		curl -S -s -o /dev/null \
@@ -229,6 +250,7 @@ function notify() {
 	apprise_notify "$title" "$message" "$type" "$silent"
 	mattermost_notify "$title" "$message" "$type" "$silent"
 	pushover_notify "$title" "$message" "$type" "$silent"
+	slack_webhook "$title" "$message" "$type" "$silent"
 }
 
 function getvolumelabelvalue() {
