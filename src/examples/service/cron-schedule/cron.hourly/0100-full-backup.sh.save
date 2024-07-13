@@ -1,0 +1,13 @@
+#!/bin/bash
+
+HOUR=$(date +%H)
+
+if [[ "$HOUR" = "01" ]]; then
+	cd /app
+BACKUPDATE="$(date '+%Y%m%d-%H%M')"
+LOGFILENAME="/logs/docker-backup-""$BACKUPDATE"".log"
+if [ ! -f "$LOGFILENAME" ]; then
+                echo "" >"$LOGFILENAME"
+        fi
+fi
+
