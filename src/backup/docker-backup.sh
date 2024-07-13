@@ -104,9 +104,9 @@ function slack_webhook() {
 		fi
 
 		curl -S -s -o /dev/null -X POST \
-		-H 'Content-type: application/json' \
-		--data "{\"text\":\"$title\n$message\"}" \
-		"$NOTIF_SLACK_WEBHOOK_URL"
+			-H 'Content-type: application/json' \
+			--data "{\"text\":\"$title\n$message\"}" \
+			"$NOTIF_SLACK_WEBHOOK_URL"
 	fi
 }
 
@@ -238,7 +238,10 @@ function notify() {
 	silent="$4"
 	type="$3"
 
-	[ "$PARAM_SIMULATE" = "true" ] && (title="$1 (Simulate)")
+	if [ "$PARAM_SIMULATE" = "true" ]; then
+		title="$1 (Simulation)"
+	fi
+
 	if [ -z "$type" ]; then
 		type="info"
 	fi
@@ -333,7 +336,7 @@ function backupnetworks() {
 	targetdir=$(realpath "$(dirname "$target")")
 	targetfile=$(basename "$target")
 
-        log "trace" "Backing up networks to $target"
+	log "trace" "Backing up networks to $target"
 	if [[ "$PARAM_SIMULATE" = "" ]]; then
 		mkdir -p "$targetdir"
 		touch "$target"
@@ -377,22 +380,22 @@ function backupworkingdir() {
 	log "trace" "Backing up working directory"
 
 	if [[ "$PARAM_SIMULATE" = "" ]]; then
-	mkdir -p "$targetdir"
+		mkdir -p "$targetdir"
 
-	case "$targetfile" in
-	*.tar.gz)
-		tar -czf "$target" -C "$workingdir" .
-		;;
-	*.tar.bz2)
-		tar -cf - -C "$workingdir" . | bzip2 -z "$BACKUP_COMPRESS_BZ2_OPT" - >"$target"
-		;;
-	*.tar.xz)
-		tar -cf - -C "$workingdir" . | xz -z "$BACKUP_COMPRESS_XZ_OPT" - >"$target"
-		;;
-	*)
-		tar -cf "$target" -C "$workingdir" .
-		;;
-	esac
+		case "$targetfile" in
+		*.tar.gz)
+			tar -czf "$target" -C "$workingdir" .
+			;;
+		*.tar.bz2)
+			tar -cf - -C "$workingdir" . | bzip2 -z "$BACKUP_COMPRESS_BZ2_OPT" - >"$target"
+			;;
+		*.tar.xz)
+			tar -cf - -C "$workingdir" . | xz -z "$BACKUP_COMPRESS_XZ_OPT" - >"$target"
+			;;
+		*)
+			tar -cf "$target" -C "$workingdir" .
+			;;
+		esac
 	fi
 
 }
@@ -412,30 +415,30 @@ function backupvolumebypath() {
 	log "trace" "Backing up volume mount $volume"
 
 	if [[ "$PARAM_SIMULATE" = "" ]]; then
-	mkdir -p "$targetdir"
+		mkdir -p "$targetdir"
 
-	if [ ! -d "$volumepath" ]; then
-		log "warn" "Cannot reach mount via filesystem. Using Docker method."
-		backupvolumewithdocker "$volume" "$target"
-		return
-	fi
+		if [ ! -d "$volumepath" ]; then
+			log "warn" "Cannot reach mount via filesystem. Using Docker method."
+			backupvolumewithdocker "$volume" "$target"
+			return
+		fi
 
-	log "trace" "Using path: $volumepath"
+		log "trace" "Using path: $volumepath"
 
-	case "$targetfile" in
-	*.tar.gz)
-		tar -czf "$target" -C "$volumepath" .
-		;;
-	*.tar.bz2)
-		tar -cf - -C "$volumepath" . | bzip2 -z "$BACKUP_COMPRESS_BZ2_OPT" - >"$target"
-		;;
-	*.tar.xz)
-		tar -cf - -C "$volumepath" . | xz -z "$BACKUP_COMPRESS_XZ_OPT" - >"$target"
-		;;
-	*)
-		tar -cf "$target" -C "$volumepath" .
-		;;
-	esac
+		case "$targetfile" in
+		*.tar.gz)
+			tar -czf "$target" -C "$volumepath" .
+			;;
+		*.tar.bz2)
+			tar -cf - -C "$volumepath" . | bzip2 -z "$BACKUP_COMPRESS_BZ2_OPT" - >"$target"
+			;;
+		*.tar.xz)
+			tar -cf - -C "$volumepath" . | xz -z "$BACKUP_COMPRESS_XZ_OPT" - >"$target"
+			;;
+		*)
+			tar -cf "$target" -C "$volumepath" .
+			;;
+		esac
 	fi
 
 }
@@ -453,35 +456,35 @@ function backupvolumewithdocker() {
 	log "trace" "Backing up volume mount $volume"
 
 	if [[ "$PARAM_SIMULATE" = "" ]]; then
-	mkdir -p "$targetdir"
-	case "$targetfile" in
-	*.tar.gz)
-		docker run --rm --name volumebackup \
-			-v "$volume":/source:ro \
-			"$BACKUP_DOCKERIMAGE" \
-			tar -cf - -C /source/ . | gzip >"$target"
-		;;
-	*.tar.bz2)
-		docker run --rm --name volumebackup \
-			-v "$volume":/source:ro \
-			-e BACKUP_COMPRESS_BZ2_OPT="$BACKUP_COMPRESS_BZ2_OPT" \
-			"$BACKUP_DOCKERIMAGE" \
-			tar -cf - -C /source/ . bzip2 -z "$BACKUP_COMPRESS_BZ2_OPT" - >"$target"
-		;;
-	*.tar.xz)
-		docker run --rm --name volumebackup \
-			-v "$volume":/source:ro \
-			-e BACKUP_COMPRESS_XZ_OPT="$BACKUP_COMPRESS_XZ_OPT" \
-			"$BACKUP_DOCKERIMAGE" \
-			tar -cf - -C /source/ . | xz -z "$BACKUP_COMPRESS_XZ_OPT" - >"$target"
-		;;
-	*)
-		docker run --rm --name volumebackup \
-			-v "$volume":/source:ro \
-			"$BACKUP_DOCKERIMAGE" \
-			tar -cf - -C /source/ . >"$target"
-		;;
-	esac
+		mkdir -p "$targetdir"
+		case "$targetfile" in
+		*.tar.gz)
+			docker run --rm --name volumebackup \
+				-v "$volume":/source:ro \
+				"$BACKUP_DOCKERIMAGE" \
+				tar -cf - -C /source/ . | gzip >"$target"
+			;;
+		*.tar.bz2)
+			docker run --rm --name volumebackup \
+				-v "$volume":/source:ro \
+				-e BACKUP_COMPRESS_BZ2_OPT="$BACKUP_COMPRESS_BZ2_OPT" \
+				"$BACKUP_DOCKERIMAGE" \
+				tar -cf - -C /source/ . bzip2 -z "$BACKUP_COMPRESS_BZ2_OPT" - >"$target"
+			;;
+		*.tar.xz)
+			docker run --rm --name volumebackup \
+				-v "$volume":/source:ro \
+				-e BACKUP_COMPRESS_XZ_OPT="$BACKUP_COMPRESS_XZ_OPT" \
+				"$BACKUP_DOCKERIMAGE" \
+				tar -cf - -C /source/ . | xz -z "$BACKUP_COMPRESS_XZ_OPT" - >"$target"
+			;;
+		*)
+			docker run --rm --name volumebackup \
+				-v "$volume":/source:ro \
+				"$BACKUP_DOCKERIMAGE" \
+				tar -cf - -C /source/ . >"$target"
+			;;
+		esac
 	fi
 }
 
@@ -498,22 +501,22 @@ function backupbind() {
 	log "trace" "Backing up bind mount $source"
 
 	if [[ "$PARAM_SIMULATE" = "" ]]; then
-	mkdir -p "$targetdir"
+		mkdir -p "$targetdir"
 
-	case "$targetfile" in
-	*.tar.gz)
-		tar -czf "$target" -C "$source" .
-		;;
-	*.tar.bz2)
-		tar -cf - -C "$source" . | bzip2 -z "$BACKUP_COMPRESS_BZ2_OPT" - >"$target"
-		;;
-	*.tar.xz)
-		tar -cf - -C "$source" . | xz -z "$BACKUP_COMPRESS_XZ_OPT" - >"$target"
-		;;
-	*)
-		tar -cf "$target" -C "$source" .
-		;;
-	esac
+		case "$targetfile" in
+		*.tar.gz)
+			tar -czf "$target" -C "$source" .
+			;;
+		*.tar.bz2)
+			tar -cf - -C "$source" . | bzip2 -z "$BACKUP_COMPRESS_BZ2_OPT" - >"$target"
+			;;
+		*.tar.xz)
+			tar -cf - -C "$source" . | xz -z "$BACKUP_COMPRESS_XZ_OPT" - >"$target"
+			;;
+		*)
+			tar -cf "$target" -C "$source" .
+			;;
+		esac
 	fi
 }
 
@@ -531,20 +534,20 @@ function commitcontainer() {
 	containername=$(docker container inspect "$id" --format '{{.Name}}' | cut -c2-)
 	tag="docker-backup/$containername:latest"
 
- 	log "trace" "Committing container $containername to local registry as $tag"
- 
+	log "trace" "Committing container $containername to local registry as $tag"
+
 	if [[ "$PARAM_SIMULATE" = "" ]]; then
-	mkdir -p "$targetdir"
-	docker container commit "$id" "$tag"
+		mkdir -p "$targetdir"
+		docker container commit "$id" "$tag"
 
-	case "$targetfile" in
-	*.tar.gz) docker image save "$tag" | gzip >"$target" ;;
-	*.tar.bz2) docker image save "$tag" | bzip2 -z "$BACKUP_COMPRESS_BZ2_OPT" - >"$target" ;;
-	*.tar.xz) docker image save "$tag" | xz -z "$BACKUP_COMPRESS_XZ_OPT" - >"$target" ;;
-	*) docker image save "$tag" >"$target" ;;
-	esac
+		case "$targetfile" in
+		*.tar.gz) docker image save "$tag" | gzip >"$target" ;;
+		*.tar.bz2) docker image save "$tag" | bzip2 -z "$BACKUP_COMPRESS_BZ2_OPT" - >"$target" ;;
+		*.tar.xz) docker image save "$tag" | xz -z "$BACKUP_COMPRESS_XZ_OPT" - >"$target" ;;
+		*) docker image save "$tag" >"$target" ;;
+		esac
 
-	docker image rm "$tag"
+		docker image rm "$tag"
 	fi
 }
 
@@ -583,13 +586,13 @@ function backuppostgres() {
 		log "trace" "Backing up postgres data in $containername"
 
 		if [[ "$PARAM_SIMULATE" = "" ]]; then
-		mkdir -p "$targetdir"
-		case "$targetfile" in
-		*.sql.gz) docker exec "$id" sh -c 'pg_dumpall --inserts -U $POSTGRES_USER ' | gzip >"$target" ;;
-		*.sql.xz) docker exec "$id" sh -c 'pg_dumpall --inserts -U $POSTGRES_USER ' | xz -z "$BACKUP_COMPRESS_XZ_OPT" - >"$target" ;;
-		*.sql.bz2) docker exec "$id" sh -c 'pg_dumpall --inserts -U $POSTGRES_USER ' | bzip2 -z "$BACKUP_COMPRESS_BZ2_OPT" - >"$target" ;;
-		*) docker exec "$id" sh -c 'pg_dumpall --inserts -U $POSTGRES_USER ' >"$target" ;;
-		esac
+			mkdir -p "$targetdir"
+			case "$targetfile" in
+			*.sql.gz) docker exec "$id" sh -c 'pg_dumpall --inserts -U $POSTGRES_USER ' | gzip >"$target" ;;
+			*.sql.xz) docker exec "$id" sh -c 'pg_dumpall --inserts -U $POSTGRES_USER ' | xz -z "$BACKUP_COMPRESS_XZ_OPT" - >"$target" ;;
+			*.sql.bz2) docker exec "$id" sh -c 'pg_dumpall --inserts -U $POSTGRES_USER ' | bzip2 -z "$BACKUP_COMPRESS_BZ2_OPT" - >"$target" ;;
+			*) docker exec "$id" sh -c 'pg_dumpall --inserts -U $POSTGRES_USER ' >"$target" ;;
+			esac
 		fi
 	fi
 
@@ -614,14 +617,14 @@ function backupmariadb() {
 	else
 		log "trace" "Backing up mariadb data in $containername"
 
-		 if [[ "$PARAM_SIMULATE" = "" ]]; then
-		mkdir -p "$targetdir"
-		case "$targetfile" in
-		*.sql.gz) docker exec "$id" sh -c 'mariadb-dump -u root  --all-databases' | gzip >"$target" ;;
-		*.sql.xz) docker exec "$id" sh -c 'mariadb-dump -u root  --all-databases' | xz -z "$BACKUP_COMPRESS_XZ_OPT" - >"$target" ;;
-		*.sql.bz2) docker exec "$id" sh -c 'mariadb-dump -u root  --all-databases' | bzip2 -z "$BACKUP_COMPRESS_BZ2_OPT" - >"$target" ;;
-		*) docker exec "$id" sh -c 'mariadb-dump -u root  --all-databases' >"$target" ;;
-		esac
+		if [[ "$PARAM_SIMULATE" = "" ]]; then
+			mkdir -p "$targetdir"
+			case "$targetfile" in
+			*.sql.gz) docker exec "$id" sh -c 'mariadb-dump -u root  --all-databases' | gzip >"$target" ;;
+			*.sql.xz) docker exec "$id" sh -c 'mariadb-dump -u root  --all-databases' | xz -z "$BACKUP_COMPRESS_XZ_OPT" - >"$target" ;;
+			*.sql.bz2) docker exec "$id" sh -c 'mariadb-dump -u root  --all-databases' | bzip2 -z "$BACKUP_COMPRESS_BZ2_OPT" - >"$target" ;;
+			*) docker exec "$id" sh -c 'mariadb-dump -u root  --all-databases' >"$target" ;;
+			esac
 		fi
 	fi
 
@@ -641,14 +644,14 @@ function backupcontainer() {
 
 	log "trace" "Backing up container $containername"
 
-	 if [[ "$PARAM_SIMULATE" = "" ]]; then
-	mkdir -p "$targetdir"
-	case "$targetfile" in
-	*.tar.gz) docker container export "$id" | gzip >"$target" ;;
-	*.tar.xz) docker container export "$id" | xz -z "$BACKUP_COMPRESS_XZ_OPT" - >"$target" ;;
-	*.tar.bz2) docker container export "$id" | bzip2 -z "$BACKUP_COMPRESS_BZ2_OPT" - >"$target" ;;
-	*) docker container export "$id" >"$target" ;;
-	esac
+	if [[ "$PARAM_SIMULATE" = "" ]]; then
+		mkdir -p "$targetdir"
+		case "$targetfile" in
+		*.tar.gz) docker container export "$id" | gzip >"$target" ;;
+		*.tar.xz) docker container export "$id" | xz -z "$BACKUP_COMPRESS_XZ_OPT" - >"$target" ;;
+		*.tar.bz2) docker container export "$id" | bzip2 -z "$BACKUP_COMPRESS_BZ2_OPT" - >"$target" ;;
+		*) docker container export "$id" >"$target" ;;
+		esac
 	fi
 }
 
@@ -681,8 +684,8 @@ function dockerbackup() {
 	fi
 
 	if [[ "$PARAM_SIMULATE" = "" ]]; then
-	mkdir -p "$target"/"$containername"/"volumes"
-	mkdir -p "$target"/"$containername"/"binds"
+		mkdir -p "$target"/"$containername"/"volumes"
+		mkdir -p "$target"/"$containername"/"binds"
 	fi
 
 	log "trace" "Backing up volumes for $containername"
@@ -740,15 +743,15 @@ function dockerbackup() {
 	fi
 
 	if [[ "$PARAM_SIMULATE" = "" ]]; then
-	if [[ "$envfile" != "" ]]; then
-		filename=$(basename "$envfile")
-		cp "$BACKUP_SOURCE""$envfile" "$target"/"$containername"/"$filename"
-	fi
+		if [[ "$envfile" != "" ]]; then
+			filename=$(basename "$envfile")
+			cp "$BACKUP_SOURCE""$envfile" "$target"/"$containername"/"$filename"
+		fi
 
-	if [[ "$configfile" != "" ]]; then
-		filename=$(basename "$configfile")
-		cp "$BACKUP_SOURCE""$configfile" "$target"/"$containername"/"$filename"
-	fi
+		if [[ "$configfile" != "" ]]; then
+			filename=$(basename "$configfile")
+			cp "$BACKUP_SOURCE""$configfile" "$target"/"$containername"/"$filename"
+		fi
 	fi
 }
 
@@ -769,18 +772,18 @@ function backupsystem() {
 	fi
 }
 
-function parsearguments()
-{	PARAM_SIMULATE=""
+function parsearguments() {
+	PARAM_SIMULATE=""
 
 	for arg in "$@"; do
 		key=$(echo "$arg" | cut -c 3- | cut -d "=" -f1)
 		value=$(echo "$arg" | cut -d "=" -f2-)
-	case "$key" in
+		case "$key" in
 		simulate)
 			log "trace" "Simulating a backup - not writing any data"
 			PARAM_SIMULATE="true"
 			;;
-	esac
+		esac
 	done
 }
 
@@ -792,12 +795,14 @@ function main() {
 
 	if [[ "$BACKUP_RETENTION_DAYS" != "" ]]; then
 		log "debug" "Deleting backup sets older than $BACKUP_RETENTION_DAYS days"
-		ctime=$(("$BACKUP_RETENTION_DAYS"-1))
+		ctime=$(("$BACKUP_RETENTION_DAYS" - 1))
 		count=$(find "$BACKUP_STORE"/* -maxdepth 0 -type d -ctime +"$ctime" | wc -l)
 
 		if [[ count -ge 1 ]]; then
 			log "debug" "Found $count backup sets to delete."
-			[ "$PARAM_SIMULATE" = "" ] && (find "$BACKUP_STORE"/* -maxdepth 0 -type d -ctime +"$ctime" -exec rm -rf {} +)
+			if [ "$PARAM_SIMULATE" = "" ]; then
+				find "$BACKUP_STORE"/* -maxdepth 0 -type d -ctime +"$ctime" -exec rm -rf {} +
+			fi
 		else
 			log "debug" "No old backup sets found"
 		fi
