@@ -674,7 +674,7 @@ function backupcontainer() {
 				touch "$targetdir"/networks.sh
 			fi
 
-			getnetwork "$networkid" >>"$targetdir"/networks.sh
+			getnetwork "$network" >>"$targetdir"/networks.sh
 			echo "" >>"$targetdir"/networks.sh
 		done
 
