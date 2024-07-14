@@ -45,6 +45,22 @@ function log() {
 	fi
 }
 
+function getcontainernetworks() {
+	local containername
+	containername="$1"
+
+	docker network inspect "$(docker network ls -q --no-trunc)" --format "{{\$v:=.Name}}{{ range .Containers }}{{if eq .Name \"$containername\" }}{{printf \$v}}{{end}}{{end}}" | sed -e '/^$/d' | sort -u
+}
+
+function gettargetdir() {
+	local target
+	local targetdir
+	target="$1"
+	targetdir="$(dirname "$target")"
+	targetdir=$(realpath -q "$(dirname "$target")" 2>/dev/null)
+	echo "$targetdir"
+}
+
 function compext() {
 
 	if [[ "$BACKUP_COMPRESS" = "true" ]]; then
@@ -333,7 +349,7 @@ function backupnetworks() {
 	local targetfile
 	local targetdir
 	target="$1"
-	targetdir=$(realpath "$(dirname "$target")")
+	targetdir=$(gettargetdir "$target")
 	targetfile=$(basename "$target")
 
 	log "trace" "Backing up networks to $target"
@@ -374,7 +390,7 @@ function backupworkingdir() {
 	local targetfile
 	workingdir="$BACKUP_SOURCE""$1"
 	target="$2"
-	targetdir=$(realpath "$(dirname "$target")")
+	targetdir=$(gettargetdir "$target")
 	targetfile=$(basename "$target")
 
 	log "trace" "Backing up working directory"
@@ -408,7 +424,12 @@ function backupvolumebypath() {
 	local targetfile
 	volume="$1"
 	target="$2"
-	targetdir=$(realpath "$(dirname "$target")")
+
+	targetdir="$(dirname "$target")"
+	if [ -d "$targetdir" ]; then
+		targetdir=$(gettargetdir "$target")
+	fi
+
 	targetfile=$(basename "$target")
 	volumepath="$BACKUP_SOURCE"$(docker volume ls --format '{{.Mountpoint}}' -f "Name=$volume")
 
@@ -427,7 +448,7 @@ function backupvolumebypath() {
 
 		case "$targetfile" in
 		*.tar.gz)
-			tar -cf - -C "$volumepath" . | gzip "$BACKUP_COMPRESS_GZ_OPT" - > "$target"
+			tar -cf - -C "$volumepath" . | gzip "$BACKUP_COMPRESS_GZ_OPT" - >"$target"
 			;;
 		*.tar.bz2)
 			tar -cf - -C "$volumepath" . | bzip2 -z "$BACKUP_COMPRESS_BZ2_OPT" - >"$target"
@@ -450,7 +471,7 @@ function backupvolumewithdocker() {
 	local targetfile
 	volume="$1"
 	target="$2"
-	targetdir=$(realpath "$(dirname "$target")")
+	targetdir=$(gettargetdir "$target")
 	targetfile=$(basename "$target")
 
 	log "trace" "Backing up volume mount $volume"
@@ -495,7 +516,7 @@ function backupbind() {
 	local targetfile
 	source="$1"
 	target="$2"
-	targetdir=$(realpath "$(dirname "$target")")
+	targetdir=$(gettargetdir "$target")
 	targetfile=$(basename "$target")
 
 	log "trace" "Backing up bind mount $source"
@@ -529,7 +550,7 @@ function commitcontainer() {
 	local tag
 	id="$1"
 	target="$2"
-	targetdir=$(realpath "$(dirname "$target")")
+	targetdir=$(gettargetdir "$target")
 	targetfile=$(basename "$target")
 	containername=$(docker container inspect "$id" --format '{{.Name}}' | cut -c2-)
 	tag="docker-backup/$containername:latest"
@@ -575,7 +596,7 @@ function backuppostgres() {
 	local cmd
 	id="$1"
 	target="$2"
-	targetdir=$(realpath "$(dirname "$target")")
+	targetdir=$(gettargetdir "$target")
 	targetfile=$(basename "$target")
 	containername=$(docker container inspect "$id" --format '{{.Name}}' | cut -c2-)
 	cmd=$(containerwhich "$id" "pg_dumpall")
@@ -607,7 +628,7 @@ function backupmariadb() {
 	local cmd
 	id="$1"
 	target="$2"
-	targetdir=$(realpath "$(dirname "$target")")
+	targetdir=$(gettargetdir "$target")
 	targetfile=$(basename "$target")
 	containername=$(docker container inspect "$id" --format '{{.Name}}' | cut -c2-)
 	cmd=$(containerwhich "$id" "mariadb-dump")
@@ -638,7 +659,7 @@ function backupcontainer() {
 	local containername
 	id="$1"
 	target="$2"
-	targetdir=$(realpath "$(dirname "$target")")
+	targetdir=$(gettargetdir "$target")
 	targetfile=$(basename "$target")
 	containername=$(docker container inspect "$id" --format '{{.Name}}' | cut -c2-)
 
@@ -646,6 +667,17 @@ function backupcontainer() {
 
 	if [[ "$PARAM_SIMULATE" = "" ]]; then
 		mkdir -p "$targetdir"
+		docker container inspect "$id" | jq >"$targetdir"/container.json
+
+		for network in $(getcontainernetworks "$containername"); do
+			if [ ! -f "$targetdir"/networks.sh ]; then
+				touch "$targetdir"/networks.sh
+			fi
+
+			getnetwork "$networkid" >>"$targetdir"/networks.sh
+			echo "" >>"$targetdir"/networks.sh
+		done
+
 		case "$targetfile" in
 		*.tar.gz) docker container export "$id" | gzip "$BACKUP_COMPRESS_GZ_OPT" - >"$target" ;;
 		*.tar.xz) docker container export "$id" | xz -z "$BACKUP_COMPRESS_XZ_OPT" - >"$target" ;;
