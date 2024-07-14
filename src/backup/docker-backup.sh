@@ -45,6 +45,13 @@ function log() {
 	fi
 }
 
+function getcontainernetworks() {
+	local containername
+	containername="$1"
+
+	docker network inspect "$(docker network ls -q --no-trunc)" --format "{{\$v:=.Name}}{{ range .Containers }}{{if eq .Name \"$containername\" }}{{printf \$v}}{{end}}{{end}}" | sed -e '/^$/d' | sort -u
+}
+
 function gettargetdir() {
 	local target
 	local targetdir
@@ -441,7 +448,7 @@ function backupvolumebypath() {
 
 		case "$targetfile" in
 		*.tar.gz)
-			tar -cf - -C "$volumepath" . | gzip "$BACKUP_COMPRESS_GZ_OPT" - > "$target"
+			tar -cf - -C "$volumepath" . | gzip "$BACKUP_COMPRESS_GZ_OPT" - >"$target"
 			;;
 		*.tar.bz2)
 			tar -cf - -C "$volumepath" . | bzip2 -z "$BACKUP_COMPRESS_BZ2_OPT" - >"$target"
@@ -660,6 +667,17 @@ function backupcontainer() {
 
 	if [[ "$PARAM_SIMULATE" = "" ]]; then
 		mkdir -p "$targetdir"
+		docker container inspect "$id" | jq >"$targetdir"/container.json
+
+		for network in $(getcontainernetworks "$containername"); do
+			if [ ! -f "$targetdir"/networks.sh ]; then
+				touch "$targetdir"/networks.sh
+			fi
+
+			getnetwork "$networkid" >>"$targetdir"/networks.sh
+			echo "" >>"$targetdir"/networks.sh
+		done
+
 		case "$targetfile" in
 		*.tar.gz) docker container export "$id" | gzip "$BACKUP_COMPRESS_GZ_OPT" - >"$target" ;;
 		*.tar.xz) docker container export "$id" | xz -z "$BACKUP_COMPRESS_XZ_OPT" - >"$target" ;;
