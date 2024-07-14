@@ -48,17 +48,15 @@ function log() {
 function getcontainernetworks() {
 	local containername
 	containername="$1"
-# shellcheck disable=SC2046
+	# shellcheck disable=SC2046
 	docker network inspect $(docker network ls -q --no-trunc) --format "{{\$v:=.Name}}{{ range .Containers }}{{if eq .Name \"$containername\" }}{{printf \$v}}{{end}}{{end}}" | sed -e '/^$/d' | sort -u
 }
-
 
 function getvolumesize() {
 	local volumename
 	volumename="$1"
 	docker system df -v --format "{{range .Volumes}}{{ if eq .Name \"$volumename\" }}{{.Size}}\n{{ end }}{{ end }}"
 }
-
 
 function getcontainersize() {
 	local containername

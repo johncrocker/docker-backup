@@ -31,6 +31,13 @@ else
         exit
 fi
 
+shfmt ./backup/docker-backup.sh > ./backup/docker-backup.new
+mv ./backup/docker-backup.new ./backup/docker-backup.sh
+shfmt ./backup/docker-backup-cron.sh > ./backup/docker-backup-cron.new
+mv ./backup/docker-backup-cron.new ./backup/docker-backup-cron.sh
+shfmt ./entrypoint.sh > ./entrypoint.new
+mv ./entrypoint.new ./entrypoint.sh
+
 shfmt -mn -s ./backup/docker-backup.sh > ./build/docker-backup.sh
 shfmt -mn -s ./backup/docker-backup-cron.sh > ./build/docker-backup-cron.sh
 shfmt -mn -s ./entrypoint.sh > ./build/entrypoint.sh
@@ -42,7 +49,7 @@ if [ "$version" = "latest" ]; then
         	--platform linux/amd64,linux/arm64 \
 		-t "crockerish/docker-backup:dev" \
           	-t "crockerish/docker-backup:$version"
-else
+	else
 	docker buildx build --push . \
         	--platform linux/amd64,linux/arm64 \
         	-t "crockerish/docker-backup:$version"
