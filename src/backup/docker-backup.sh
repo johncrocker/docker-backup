@@ -52,6 +52,20 @@ function getcontainernetworks() {
 	docker network inspect $(docker network ls -q --no-trunc) --format "{{\$v:=.Name}}{{ range .Containers }}{{if eq .Name \"$containername\" }}{{printf \$v}}{{end}}{{end}}" | sed -e '/^$/d' | sort -u
 }
 
+
+function getvolumesize() {
+	local volumename
+	volumename="$1"
+	docker system df -v --format "{{range .Volumes}}{{ if eq .Name \"$volumename\" }}{{.Size}}\n{{ end }}{{ end }}"
+}
+
+
+function getcontainersize() {
+	local containername
+	containername="$1"
+	docker system df -v --format "{{range .Containers}}{{ if eq .Names \"$containername\" }}{{.Size}}\n{{ end }}{{ end }}"
+}
+
 function gettargetdir() {
 	local target
 	local targetdir
@@ -792,6 +806,7 @@ function backupsystem() {
 	local backuptarget
 	backuptarget="$1"
 	docker system info -f 'json' | jq >"$backuptarget"/dockersystem.json
+	docker system df -v --format 'json' | jq >"$backuptarget"/dockerdiskusage.json
 	docker version -f 'json' | jq >"$backuptarget"/version.json
 
 	if [ -f "$BACKUP_SOURCE"/etc/docker/daemon.json ]; then
