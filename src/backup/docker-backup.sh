@@ -49,7 +49,7 @@ function getcontainernetworks() {
 	local containername
 	containername="$1"
 
-	docker network inspect "$(docker network ls -q --no-trunc)" --format "{{\$v:=.Name}}{{ range .Containers }}{{if eq .Name \"$containername\" }}{{printf \$v}}{{end}}{{end}}" | sed -e '/^$/d' | sort -u
+	docker network inspect $(docker network ls -q --no-trunc) --format "{{\$v:=.Name}}{{ range .Containers }}{{if eq .Name \"$containername\" }}{{printf \$v}}{{end}}{{end}}" | sed -e '/^$/d' | sort -u
 }
 
 function gettargetdir() {
