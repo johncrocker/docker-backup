@@ -7,5 +7,6 @@ if [ ! -f "$LOGFILENAME" ]; then
 	echo "" >"$LOGFILENAME"
 fi
 
-cd /app
+cd /app || exit
+
 ./docker-backup.sh >&1 | tee "$LOGFILENAME"

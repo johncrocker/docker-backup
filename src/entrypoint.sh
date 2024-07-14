@@ -6,8 +6,9 @@ export INSIDE_CONTAINER=""
 if [ -f /.dockerenv ]; then
 	containerid=$(cat /etc/hostname)
 	export INSIDE_CONTAINER="true"
-	export DOCKER_BACKUP_CONTAINERID=$(docker inspect "$containerid" -f "{{.Id}}")
-	export BACKUP_SOURCE="/source"
+# shellcheck disable=SC2155
+	export DOCKER_BACKUP_CONTAINERID="$(docker inspect "$containerid" -f '{{.Id}}')"
+ 	export BACKUP_SOURCE="/source"
 fi
 
 BACKUPDATE="$(date '+%Y%m%d-%H%M')"
@@ -22,7 +23,7 @@ if [ ! -f /cron.schedule/crontab ]; then
 	cp /etc/crontab.default /etc/cron.schedule/crontab
 fi
 
-cd /app
+cd /app || exit
 
 if [ "$BACKUP_RUN_ONCE" = "true" ]; then
 	if [ ! -f "$LOGFILENAME" ]; then
@@ -30,7 +31,7 @@ if [ "$BACKUP_RUN_ONCE" = "true" ]; then
 	fi
 
 	echo "Starting run-once then shutdown"
-	echo "Arguments: $@"
+	echo "Arguments: $*"
 	echo ""
 	./docker-backup.sh "$@" 2>&1 | tee "$LOGFILENAME"
 else

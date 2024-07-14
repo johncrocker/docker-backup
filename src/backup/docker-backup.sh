@@ -48,8 +48,22 @@ function log() {
 function getcontainernetworks() {
 	local containername
 	containername="$1"
-
+# shellcheck disable=SC2046
 	docker network inspect $(docker network ls -q --no-trunc) --format "{{\$v:=.Name}}{{ range .Containers }}{{if eq .Name \"$containername\" }}{{printf \$v}}{{end}}{{end}}" | sed -e '/^$/d' | sort -u
+}
+
+
+function getvolumesize() {
+	local volumename
+	volumename="$1"
+	docker system df -v --format "{{range .Volumes}}{{ if eq .Name \"$volumename\" }}{{.Size}}\n{{ end }}{{ end }}"
+}
+
+
+function getcontainersize() {
+	local containername
+	containername="$1"
+	docker system df -v --format "{{range .Containers}}{{ if eq .Names \"$containername\" }}{{.Size}}\n{{ end }}{{ end }}"
 }
 
 function gettargetdir() {
@@ -433,7 +447,7 @@ function backupvolumebypath() {
 	targetfile=$(basename "$target")
 	volumepath="$BACKUP_SOURCE"$(docker volume ls --format '{{.Mountpoint}}' -f "Name=$volume")
 
-	log "trace" "Backing up volume mount $volume"
+	log "trace" "Backing up volume mount $volume (Size $(getvolumesize "$volume"))"
 
 	if [[ "$PARAM_SIMULATE" = "" ]]; then
 		mkdir -p "$targetdir"
@@ -474,7 +488,7 @@ function backupvolumewithdocker() {
 	targetdir=$(gettargetdir "$target")
 	targetfile=$(basename "$target")
 
-	log "trace" "Backing up volume mount $volume"
+	log "trace" "Backing up volume mount $volume (Size $(getvolumesize "$volume"))"
 
 	if [[ "$PARAM_SIMULATE" = "" ]]; then
 		mkdir -p "$targetdir"
@@ -663,7 +677,7 @@ function backupcontainer() {
 	targetfile=$(basename "$target")
 	containername=$(docker container inspect "$id" --format '{{.Name}}' | cut -c2-)
 
-	log "trace" "Backing up container $containername"
+	log "trace" "Backing up container $containername (Size $(getcontainersize "$containername"))"
 
 	if [[ "$PARAM_SIMULATE" = "" ]]; then
 		mkdir -p "$targetdir"
@@ -792,6 +806,7 @@ function backupsystem() {
 	local backuptarget
 	backuptarget="$1"
 	docker system info -f 'json' | jq >"$backuptarget"/dockersystem.json
+	docker system df -v --format 'json' | jq >"$backuptarget"/dockerdiskusage.json
 	docker version -f 'json' | jq >"$backuptarget"/version.json
 
 	if [ -f "$BACKUP_SOURCE"/etc/docker/daemon.json ]; then
