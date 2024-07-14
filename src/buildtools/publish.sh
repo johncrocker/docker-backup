@@ -7,11 +7,35 @@ fi
 
 cd $HOME/src/docker-backup/src
 
-docker buildx create --name multiarchbuilder --use --bootstrap
+shellcheck ./backup/docker-backup.sh
+
+if [[ "$?" -eq 0 ]]; then
+        echo "Shellcheck successful."
+else
+        exit
+fi
+
+shellcheck ./backup/docker-backup-cron.sh
+
+if [[ "$?" -eq 0 ]]; then
+        echo "Shellcheck successful."
+else
+        exit
+fi
+
+shellcheck ./entrypoint.sh
+
+if [[ "$?" -eq 0 ]]; then
+        echo "Shellcheck successful."
+else
+        exit
+fi
 
 shfmt -mn -s ./backup/docker-backup.sh > ./build/docker-backup.sh
 shfmt -mn -s ./backup/docker-backup-cron.sh > ./build/docker-backup-cron.sh
 shfmt -mn -s ./entrypoint.sh > ./build/entrypoint.sh
+
+docker buildx create --name multiarchbuilder --use --bootstrap
 
 if [ "$version" = "latest" ]; then
 	docker buildx build --push . \

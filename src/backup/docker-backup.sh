@@ -48,7 +48,7 @@ function log() {
 function getcontainernetworks() {
 	local containername
 	containername="$1"
-
+# shellcheck disable=SC2046
 	docker network inspect $(docker network ls -q --no-trunc) --format "{{\$v:=.Name}}{{ range .Containers }}{{if eq .Name \"$containername\" }}{{printf \$v}}{{end}}{{end}}" | sed -e '/^$/d' | sort -u
 }
 
@@ -447,7 +447,7 @@ function backupvolumebypath() {
 	targetfile=$(basename "$target")
 	volumepath="$BACKUP_SOURCE"$(docker volume ls --format '{{.Mountpoint}}' -f "Name=$volume")
 
-	log "trace" "Backing up volume mount $volume"
+	log "trace" "Backing up volume mount $volume (Size $(getvolumesize "$volume"))"
 
 	if [[ "$PARAM_SIMULATE" = "" ]]; then
 		mkdir -p "$targetdir"
@@ -488,7 +488,7 @@ function backupvolumewithdocker() {
 	targetdir=$(gettargetdir "$target")
 	targetfile=$(basename "$target")
 
-	log "trace" "Backing up volume mount $volume"
+	log "trace" "Backing up volume mount $volume (Size $(getvolumesize "$volume"))"
 
 	if [[ "$PARAM_SIMULATE" = "" ]]; then
 		mkdir -p "$targetdir"
@@ -677,7 +677,7 @@ function backupcontainer() {
 	targetfile=$(basename "$target")
 	containername=$(docker container inspect "$id" --format '{{.Name}}' | cut -c2-)
 
-	log "trace" "Backing up container $containername"
+	log "trace" "Backing up container $containername (Size $(getcontainersize "$containername"))"
 
 	if [[ "$PARAM_SIMULATE" = "" ]]; then
 		mkdir -p "$targetdir"
