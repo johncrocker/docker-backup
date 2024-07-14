@@ -6,9 +6,9 @@ export INSIDE_CONTAINER=""
 if [ -f /.dockerenv ]; then
 	containerid=$(cat /etc/hostname)
 	export INSIDE_CONTAINER="true"
-# shellcheck disable=SC2155
+	# shellcheck disable=SC2155
 	export DOCKER_BACKUP_CONTAINERID="$(docker inspect "$containerid" -f '{{.Id}}')"
- 	export BACKUP_SOURCE="/source"
+	export BACKUP_SOURCE="/source"
 fi
 
 BACKUPDATE="$(date '+%Y%m%d-%H%M')"
