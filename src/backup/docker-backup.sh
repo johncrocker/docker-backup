@@ -2,6 +2,8 @@
 # shellcheck disable=SC2317 # Don't warn about unreachable commands in this file
 # shellcheck disable=SC1090 # Can't follow non-constant source. Use a directive to specify location
 # shellcheck disable=SC2002 # Useless cat. Consider cmd < file | .. or cmd file | .. instead.
+CONTAINER_SIZE=""
+VOLUME_SIZE=""
 
 function log() {
 	declare -A loglevels
@@ -50,6 +52,15 @@ function getcontainernetworks() {
 	containername="$1"
 	# shellcheck disable=SC2046
 	docker network inspect $(docker network ls -q --no-trunc) --format "{{\$v:=.Name}}{{ range .Containers }}{{if eq .Name \"$containername\" }}{{printf \$v}}{{end}}{{end}}" | sed -e '/^$/d' | sort -u
+}
+
+function getfoldersizeinkb() {
+	local folder
+	local size
+	folder="$1"
+	size=0
+	size=$(du -BK -cs "$folder" | tail -1 | cut -f1 | sed 's/K*\b//g')
+	echo "$size"
 }
 
 function getvolumesize() {
