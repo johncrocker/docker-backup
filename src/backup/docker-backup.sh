@@ -882,6 +882,21 @@ function main() {
 	log "trace" "Finished."
 }
 
+function showbanner() {
+	printf "                                          \n"
+	printf " mmmmm                #                   \n"
+	printf " #    #  m\"\"#m  mmm   #   m  m   m  mmmm  \n"
+	printf " #mmmm\" #  mm# #\"  \"  # m\"   #   #  #\" \"# \n"
+	printf " #    # # #  # #      #\"#    #   #  #   # \n"
+	printf " #mmmm\" #m \"\"\" \"#mm\"  #  \"m  \"mm\"#  ##m#\" \n"
+	printf "         \"mmm                       #     \n"
+	printf "                                    \"     \n"
+	printf "Docker-Backup is a open source backup solution for your docker infrastructure. Written in BASH and designed to be sinple to use.\n"
+	printf "https://github.com/johncrocker/docker-backup\n\n"
+}
+
+showbanner
+
 BACKUPDATE="$(date '+%Y%m%d-%H%M')"
 
 if [ "$EUID" -ne 0 ]; then
