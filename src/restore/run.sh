@@ -3,4 +3,12 @@
 # shellcheck disable=SC1090 # Can't follow non-constant source. Use a directive to specify location
 # shellcheck disable=SC2002 # Useless cat. Consider cmd < file | .. or cmd file | .. instead.
 
-docker container inspect mariadb | ./createdockercompose.sh
+container="$1"
+
+if [ -z "$container" ]; then
+	container="mealie"
+fi
+
+docker container inspect "$container" > ./inspect.json
+
+cat ./inspect.json | ./createdockercompose.sh
