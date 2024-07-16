@@ -9,6 +9,18 @@ function getlabels() {
 	echo "$json" | jq '.[].Config.Labels | keys[] as $key | [$key,.[$key]] | @tsv' -r | awk '!/^(org.opencontainers|com.docker)/{printf ("      - \"%s=%s\"\n" ,$1,$2)}' | sort -u
 }
 
+function writevolumes() {
+ 	local json
+	local result
+	json="$1"
+
+	printf "    %s:\n" "volumes"
+
+	echo "$json" | jq '.[].Mounts | keys[] as $key | [.[$key].Type, .[$key].Name,.[$key].Source, .[$key].Destination] | @tsv' -r | sed '/^bind/d' | awk '{ printf "      - %s:%s\n", $2, $4 }'
+	echo "$json" | jq '.[].Mounts | keys[] as $key | [.[$key].Type, .[$key].Name,.[$key].Source, .[$key].Destination] | @tsv' -r | sed '/^volume/d' | awk '{ printf "      - %s:%s\n", $3, $4 }'
+}
+
+
 function writeprop() {
 	local json
 	local prop
@@ -61,7 +73,7 @@ writeprop "$json" "dns" '.[].HostConfig.Dns'
 writeprop "$json" "dns_search" '.[].HostConfig.DnsSearch'
 writeprop "$json" "environment" '.[].Config.Env'
 writeprop "$json" "extra_hosts" '.[].HostConfig.ExtraHosts'
-
+writevolumes "$json"
 
 if [ ! -z "$labels" ]; then
 printf "    labels:\n"
