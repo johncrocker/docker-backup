@@ -11,4 +11,4 @@ fi
 
 docker container inspect "$container" > ./inspect.json
 
-cat ./inspect.json | ./createdockercompose.sh
+docker container inspect "$container" | ./createdockercompose.sh
