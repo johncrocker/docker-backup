@@ -29,11 +29,11 @@ function writeservicenetworks() {
 function writeserviceexposedports() {
 	local json
 	json="$1"
-	result=$(echo "$json" | jq '.[].Config.ExposedPorts' -r | sed 's/{}/null/g')
+	result=$(echo "$json" | jq '.[].Config.ExposedPorts' -r | sed 's/{}/null/g' | sort -u)
 
 	if [ "$result" != "null" ]; then
 		printf "    %s:\n" "expose"
-		echo "$json" | jq '.[].Config.ExposedPorts | keys[] as $key | [ $key ] | @tsv' -r | awk '{printf("      - \"%s\"\n", $1)}'
+		echo "$json" | jq '.[].Config.ExposedPorts | to_entries[] | .key ' -r | awk '{if ($1 ~ /\/tcp$/ ) { printf ("%s\n",$1) } else { printf ("%s/tcp\n",$1) } }' | sort -u | awk '{printf("      - \"%s\"\n", $1)}'
 	fi
 }
 
@@ -43,8 +43,12 @@ function writeserviceports() {
 	result=$(echo "$json" | jq '.[].NetworkSettings.Ports' -r | sed 's/{}/null/g')
 
 	if [ "$result" != "null" ]; then
-		printf "    %s:\n" "ports"
-		echo "$json" | jq '.[].NetworkSettings.Ports | to_entries[] | [ (.key), (.value | .[]?.HostPort ), (.value | .[]?.HostIp ) ] | @tsv' -r | awk '! ( NF==1 )' | awk '{printf ("      - \"%s:%s: %s\"\n", $3,$2,$1)}'
+		result=$(echo "$json" | jq '.[].NetworkSettings.Ports | to_entries[] | [ (.key), (.value | .[]?.HostPort ), (.value | .[]?.HostIp ) ] | @tsv' -r | awk '! ( NF==1 )' | awk '{printf ("      - \"%s:%s: %s\"\n", $3,$2,$1)}' | sort -u)
+
+		if [ ! -z "$result" ]; then
+			printf "    %s:\n" "ports"
+			echo "$result"
+		fi
 	fi
 }
 
@@ -63,20 +67,29 @@ function writeprop() {
 	local prop
 	local path
 	local value
+	local format
 	json="$1"
 	prop="$2"
 	path="$3"
+	format="$4"
+
+	if [ -z "$format" ]; then
+		format="default"
+	fi
 
 	value=$(echo "$json" | jq "$path" -r)
-	if [[ ! -z "$value" ]]; then
-		if [[ ! "$value" = "null" ]] && [[ ! "$value" = "[]" ]]; then
-			if [[ "$value" =~ \[.* ]]; then
+	if [[ ! -z "$value" ]] && [[ ! "$value" = "null" ]] && [[ ! "$value" = "[]" ]]; then
+		if [[ "$value" =~ \[.* ]]; then
+			if [ "$format" = "array" ]; then
+				value=$(echo "$json" | jq "$path" -r -c)
+				printf "    %s: %s\n" "$prop" "$value"
+			else
 				value=$(echo "$json" | jq "$path | @tsv" -r)
 				printf "    %s:\n" "$prop"
 				echo "$value" | tr "\t" "\n" | sed -e 's/^/      - /'
-			else
-				printf "    %s: %s\n" "$prop" "$value"
 			fi
+		else
+			printf "    %s: %s\n" "$prop" "$value"
 		fi
 	fi
 }
@@ -93,6 +106,9 @@ function writeservice() {
 	writeprop "$json" "domainname" '.[].Config.Domainname'
 	printf "    restart: %s\n" $(echo "$json" | jq .[].HostConfig.RestartPolicy.Name -r)
 
+	writeprop "$json" "command" '.[].Config.Cmd' 'array'
+	writeprop "$json" "entrypoint" '.[].Config.Entrypoint'
+
 	writeprop "$json" "security_opt" '.[].HostConfig.SecurityOpt'
 	writeprop "$json" "ulimits" '.[].HostConfig.Ulimits'
 	writeprop "$json" "cap_add" '.[].HostConfig.CapAdd'
@@ -106,10 +122,13 @@ function writeservice() {
 	writeprop "$json" "restart" '.[].HostConfig.RestartPolicy.Name'
 	writeprop "$json" "read_only" '.[].HostConfig.ReadonlyRootfs'
 	writeprop "$json" "stdin_open" '.[].Config.OpenStdin'
+	writeprop "$json" "stop_grace_period" '.[].Config.StopTyyimeout'
 	writeprop "$json" "tty" '.[].Config.Tty'
 	writeprop "$json" "mac_address" '.[].NetworkSettings.MacAddress'
+	writeprop "$json" "devices" '.[].HostConfig.Devices'
+
 	writeservicenetworks "$json"
-	# writeserviceexposedports "$json"
+	writeserviceexposedports "$json"
 	writeserviceports "$json"
 
 	writeprop "$json" "dns" '.[].HostConfig.Dns'
