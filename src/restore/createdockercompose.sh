@@ -17,16 +17,39 @@ function getcontainerlabelvalue() {
 	echo "$json" | jq '.[].Config.Labels | keys[] as $key | [$key,.[$key]] | @tsv' -r | awk -v label="$label" '$1==label { print $2 }'
 }
 
+function writeservicenetworks() {
+	local json
+	json="$1"
+
+	printf "    %s:\n" "networks"
+
+	echo "$json" | jq '.[].NetworkSettings.Networks | to_entries[] | [ (.key), (.value | .IPAddress) ] | @tsv ' -r |  awk '{ printf "      %s:\n        ipv4_address: %s\n", $1, $2 }'
+}
+
+function writeserviceexposedports() {
+	local json
+	json="$1"
+	printf "    %s:\n" "expose"
+	echo "$json" | jq '.[].Config.ExposedPorts | keys[] as $key | [ $key ] | @tsv' -r | awk '{printf("      - \"%s\"\n", $1)}'
+}
+
+function writeserviceports() {
+	local json
+	json="$1"
+	printf "    %s:\n" "ports"
+	echo "$json" | jq '.[].NetworkSettings.Ports | to_entries[] | [ (.key), (.value | .[]?.HostPort ), (.value | .[]?.HostIp ) ] | @tsv' -r | awk '! ( NF==1 )' | awk '{printf ("      - \"%s:%s: %s\"\n", $3,$2,$1)}'
+}
+
 function writeservicevolumes() {
 	local json
-	local result
 	json="$1"
 
 	printf "    %s:\n" "volumes"
 
-	echo "$json" | jq '.[].Mounts | keys[] as $key | [.[$key].Type, .[$key].Name,.[$key].Source, .[$key].Destination] | @tsv' -r | sed '/^bind/d' | awk '{ printf "      - %s:%s\n", $2, $4 }'
-	echo "$json" | jq '.[].Mounts | keys[] as $key | [.[$key].Type, .[$key].Name,.[$key].Source, .[$key].Destination] | @tsv' -r | sed '/^volume/d' | awk '{ printf "      - %s:%s\n", $3, $4 }'
+	echo "$json" | jq '.[].Mounts | keys[] as $key | [.[$key].Type, .[$key].Name,.[$key].Source, .[$key].Destination, .[$key].Mode] | @tsv' -r | sed '/^bind/d' | awk '{ printf "      - %s:%s:%s\n", $2, $4, $5 }'
+	echo "$json" | jq '.[].Mounts | keys[] as $key | [.[$key].Type, .[$key].Name,.[$key].Source,.[$key].Destination,.[$key].Mode] | @tsv' -r | sed '/^volume/d' | awk '{ printf "      - %s:%s:%s\n", $2, $3, $4 }'
 }
+
 
 function writeprop() {
 	local json
@@ -65,7 +88,9 @@ function writeservice() {
 
 	writeprop "$json" "security_opt" '.[].HostConfig.SecurityOpt'
 	writeprop "$json" "ulimits" '.[].HostConfig.Ulimits'
+	writeprop "$json" "cap_add" '.[].HostConfig.CapAdd'
 	writeprop "$json" "cap_drop" '.[].HostConfig.CapDrop'
+	writeprop "$json" "cgroup" '.[].HostConfig.Cgroup'
 	writeprop "$json" "cgroup_parent" '.[].HostConfig.CgroupParent'
 	writeprop "$json" "user" '.[].Config.User'
 	writeprop "$json" "working_dir" '.[].Config.WorkingDir'
@@ -76,12 +101,17 @@ function writeservice() {
 	writeprop "$json" "read_only" '.[].HostConfig.ReadonlyRootfs'
 	writeprop "$json" "stdin_open" '.[].Config.OpenStdin'
 	writeprop "$json" "tty" '.[].Config.Tty'
+writeprop "$json" "mac_address" '.[].NetworkSettings.MacAddress'
+writeservicenetworks "$json"
+# writeserviceexposedports "$json"
+writeserviceports "$json"
 
 	writeprop "$json" "dns" '.[].HostConfig.Dns'
 	writeprop "$json" "dns_search" '.[].HostConfig.DnsSearch'
-	writeprop "$json" "environment" '.[].Config.Env'
 	writeprop "$json" "extra_hosts" '.[].HostConfig.ExtraHosts'
 	writeservicevolumes "$json"
+
+	writeprop "$json" "environment" '.[].Config.Env'
 
 	if [ ! -z "$labels" ]; then
 		printf "    labels:\n"
@@ -90,18 +120,22 @@ function writeservice() {
 }
 
 function writevolumes() {
-	printf "\nvolumes: {}\n"
+	local json
+	json="$1"
+	printf "\nvolumes:\n"
+	echo "$json" | jq '.[].Mounts | keys[] as $key | [.[$key].Type, .[$key].Name,.[$key].Source, .[$key].Destination, .[$key].Mode] | @tsv' -r | sed '/^bind/d' | awk '{ printf "  %s:\n    external: true\n", $2, $4 }'
 }
 
 function writenetworks() {
-	printf "\nnetworks: {}\n"
-}
-
-function writesecrets() {
-	printf "\nsecrets: {}\n"
+	local json
+	json="$1"
+	printf "\nnetworks:\n"
+	echo "$json" | jq '.[].NetworkSettings.Networks | to_entries[] | [ (.key), (.value | .IPAddress) ] | @tsv ' -r |  awk '{ printf "  %s:\n    external: true\n", $1, $2 }'
 }
 
 function writeconfigs() {
+	local json
+	json="$1"
 	printf "\nconfigs: {}\n"
 }
 
@@ -113,5 +147,4 @@ printf "services:\n"
 writeservice "$json"
 writevolumes "$json"
 writenetworks "$json"
-writesecrets "$json"
 writeconfigs "$json"
