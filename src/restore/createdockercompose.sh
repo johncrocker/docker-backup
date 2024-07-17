@@ -147,7 +147,7 @@ function writeservice() {
 function writevolumes() {
 	local json
 	json="$1"
-	result=$(echo "$json" | jq '.[].Mounts | keys[] as $key | [.[$key].Type, .[$key].Name,.[$key].Source, .[$key].Destination, .[$key].Mode] | @tsv' -r | sed '/^bind/d' | awk '{ printf "  %s:\n    external: true\n", $2, $4 }')
+	result=$(echo "$json" | jq '.[].Mounts | keys[] as $key | [.[$key].Type, .[$key].Name,.[$key].Source, .[$key].Destination, .[$key].Mode] | @tsv' -r | sed '/^bind/d' | awk '{ printf "  %s:\n    external: true\n    name: %s\n", $2, $2 }')
 
 	if [ ! -z "$result" ]; then
 		printf "\nvolumes:\n"
