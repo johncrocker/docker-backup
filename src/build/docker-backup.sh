@@ -41,6 +41,14 @@ local containername
 containername="$1"
 docker network inspect $(docker network ls -q --no-trunc) --format "{{\$v:=.Name}}{{ range .Containers }}{{if eq .Name \"$containername\" }}{{printf \$v}}{{end}}{{end}}"|sed -e '/^$/d'|sort -u
 }
+function getfoldersizeinkb(){
+local folder
+local size
+folder="$1"
+size=0
+size=$(du -BK -cs "$folder"|tail -1|cut -f1|sed 's/K*\b//g')
+echo "$size"
+}
 function getvolumesize(){
 local volumename
 volumename="$1"
@@ -681,8 +689,13 @@ value=$(echo "$arg"|cut -d "=" -f2-)
 case "$key" in
 simulate)log "trace" "Simulating a backup - not writing any data"
 PARAM_SIMULATE="true"
+;;
+test-notifications)log "trace" "Performing a notification test and exiting."
+notify "docker-backup" "Notification test from docker-backup."
+exit
 esac
 done
+exit
 }
 function main(){
 containertobackup="$BACKUP_CONTAINERS"
