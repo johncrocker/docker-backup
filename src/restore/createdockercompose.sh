@@ -97,11 +97,15 @@ function writeprop() {
 function writeservicedevices() {
 	local json
 	json="$1"
-	result=$(echo "$json" | jq '.[].HostConfig.Devices | to_entries[] | [ (.value) | .PathOnHost, .PathInContainer ] | @tsv' -r | awk '{ printf "      - \"%s:%s\"\n", $1, $2 }')
 
-	if [ ! -z "$result" ]; then
-		printf "    %s:\n" "devices"
-		echo "$result"
+	result=$(echo "$json" | jq '.[].HostConfig.Devices' -r -c)
+	if [ "$result" != "null" ]; then
+		result=$(echo "$json" | jq '.[].HostConfig.Devices | to_entries[] | [ (.value) | .PathOnHost, .PathInContainer ] | @tsv' -r | awk '{ printf "      - \"%s:%s\"\n", $1, $2 }')
+
+		if [ ! -z "$result" ]; then
+			printf "    %s:\n" "devices"
+			echo "$result"
+		fi
 	fi
 }
 
@@ -116,6 +120,11 @@ function writeservice() {
 	printf "    hostname: %s\n" $(echo "$json" | jq .[].Config.Hostname -r)
 	writeprop "$json" "domainname" '.[].Config.Domainname'
 	printf "    restart: %s\n" $(echo "$json" | jq .[].HostConfig.RestartPolicy.Name -r)
+
+	env_file=$(getcontainerlabelvalue "$json" "com.docker.compose.project.environment_file")
+	if [ ! -z "$env_file" ]; then
+		printf "    env_file: %s\n" "$env_file"
+	fi
 
 	writeprop "$json" "command" '.[].Config.Cmd' 'array'
 	writeprop "$json" "entrypoint" '.[].Config.Entrypoint'
@@ -141,7 +150,7 @@ function writeservice() {
 	writeservicenetworks "$json"
 	writeserviceexposedports "$json"
 	writeserviceports "$json"
-
+ 
 	writeprop "$json" "dns" '.[].HostConfig.Dns'
 	writeprop "$json" "dns_search" '.[].HostConfig.DnsSearch'
 	writeprop "$json" "extra_hosts" '.[].HostConfig.ExtraHosts'
