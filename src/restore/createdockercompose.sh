@@ -23,7 +23,7 @@ function writeservicenetworks() {
 
 	printf "    %s:\n" "networks"
 
-	echo "$json" | jq '.[].NetworkSettings.Networks | to_entries[] | [ (.key), (.value | .IPAddress) ] | @tsv ' -r |  awk '{ printf "      %s:\n        ipv4_address: %s\n", $1, $2 }'
+	echo "$json" | jq '.[].NetworkSettings.Networks | to_entries[] | [ (.key), (.value | .IPAddress) ] | @tsv ' -r | awk '{ printf "      %s:\n        ipv4_address: %s\n", $1, $2 }'
 }
 
 function writeserviceexposedports() {
@@ -49,7 +49,6 @@ function writeservicevolumes() {
 	echo "$json" | jq '.[].Mounts | keys[] as $key | [.[$key].Type, .[$key].Name,.[$key].Source, .[$key].Destination, .[$key].Mode] | @tsv' -r | sed '/^bind/d' | awk '{ printf "      - %s:%s:%s\n", $2, $4, $5 }'
 	echo "$json" | jq '.[].Mounts | keys[] as $key | [.[$key].Type, .[$key].Name,.[$key].Source,.[$key].Destination,.[$key].Mode] | @tsv' -r | sed '/^volume/d' | awk '{ printf "      - %s:%s:%s\n", $2, $3, $4 }'
 }
-
 
 function writeprop() {
 	local json
@@ -101,10 +100,10 @@ function writeservice() {
 	writeprop "$json" "read_only" '.[].HostConfig.ReadonlyRootfs'
 	writeprop "$json" "stdin_open" '.[].Config.OpenStdin'
 	writeprop "$json" "tty" '.[].Config.Tty'
-writeprop "$json" "mac_address" '.[].NetworkSettings.MacAddress'
-writeservicenetworks "$json"
-# writeserviceexposedports "$json"
-writeserviceports "$json"
+	writeprop "$json" "mac_address" '.[].NetworkSettings.MacAddress'
+	writeservicenetworks "$json"
+	# writeserviceexposedports "$json"
+	writeserviceports "$json"
 
 	writeprop "$json" "dns" '.[].HostConfig.Dns'
 	writeprop "$json" "dns_search" '.[].HostConfig.DnsSearch'
@@ -130,7 +129,7 @@ function writenetworks() {
 	local json
 	json="$1"
 	printf "\nnetworks:\n"
-	echo "$json" | jq '.[].NetworkSettings.Networks | to_entries[] | [ (.key), (.value | .IPAddress) ] | @tsv ' -r |  awk '{ printf "  %s:\n    external: true\n", $1, $2 }'
+	echo "$json" | jq '.[].NetworkSettings.Networks | to_entries[] | [ (.key), (.value | .IPAddress) ] | @tsv ' -r | awk '{ printf "  %s:\n    external: true\n", $1, $2 }'
 }
 
 function writeconfigs() {
