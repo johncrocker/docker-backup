@@ -847,7 +847,6 @@ function parsearguments() {
 		esac
 	done
 
-	exit
 }
 
 function main() {
