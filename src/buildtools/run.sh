@@ -23,7 +23,7 @@ docker run -it --rm --name docker-backup-test \
 		-e NOTIF_APPRISE_ENABLE=true \
                 -e NOTIF_PUSHOVER_ENABLE=false \
                 -e NOTIF_APPRISE_URLS=pover://ukmd45b1xhek1jbm4v9g83zzqxjzbm@a2ep2u3kuva7sauc6jx48dx4vb4nue?rto=30 \
-                -e NOTIF_APPRISE_SERVER_URL=http://appsrise.apps.home \
+                -e NOTIF_APPRISE_SERVER_URL=http://apprise.apps.home \
                 -e TZ=Europe/London \
                 -v /var/run/docker.sock:/var/run/docker.sock:ro \
                 -v /:/source:ro \

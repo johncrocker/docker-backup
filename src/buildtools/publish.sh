@@ -55,4 +55,3 @@ if [ "$version" = "latest" ]; then
         	-t "crockerish/docker-backup:$version"
 fi
 
-docker buildx rm multiarchbuilder
