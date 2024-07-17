@@ -43,7 +43,7 @@ function writeserviceports() {
 	result=$(echo "$json" | jq '.[].NetworkSettings.Ports' -r | sed 's/{}/null/g')
 
 	if [ "$result" != "null" ]; then
-		result=$(echo "$json" | jq '.[].NetworkSettings.Ports | to_entries[] | [ (.key), (.value | .[]?.HostPort ), (.value | .[]?.HostIp ) ] | @tsv' -r | awk '! ( NF==1 )' | awk '{printf ("      - \"%s:%s:%s\"\n", $3,$2,$1)}' | sort -u)
+		result=$(echo "$json" | jq '.[].NetworkSettings.Ports | to_entries[] | [ (.key), (.value | .[]?.HostPort ), (.value | .[]?.HostIp ) ] | @tsv' -r | awk '! ( NF==1 )' | awk '{ if ($3=="0.0.0.0") {printf ("      - \"%s:%s\"\n", $2,$1)} else {printf ("      - \"%s:%s:%s\"\n", $3,$2,$1)} }' | sort -u)
 
 		if [ ! -z "$result" ]; then
 			printf "    %s:\n" "ports"
