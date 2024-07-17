@@ -187,12 +187,6 @@ function writenetworks() {
 
 }
 
-function writeconfigs() {
-	local json
-	json="$1"
-	printf "\nconfigs: {}\n"
-}
-
 json="$(</dev/stdin)"
 
 printf "name: %s\n\n" $(getcontainerlabelvalue "$json" "com.docker.compose.project")
@@ -201,4 +195,3 @@ printf "services:\n"
 writeservice "$json"
 writevolumes "$json"
 writenetworks "$json"
-writeconfigs "$json"
