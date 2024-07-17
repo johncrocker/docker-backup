@@ -695,7 +695,6 @@ notify "docker-backup" "Notification test from docker-backup."
 exit
 esac
 done
-exit
 }
 function main(){
 containertobackup="$BACKUP_CONTAINERS"
