@@ -29,15 +29,23 @@ function writeservicenetworks() {
 function writeserviceexposedports() {
 	local json
 	json="$1"
-	printf "    %s:\n" "expose"
-	echo "$json" | jq '.[].Config.ExposedPorts | keys[] as $key | [ $key ] | @tsv' -r | awk '{printf("      - \"%s\"\n", $1)}'
+	result=$(echo "$json" | jq '.[].Config.ExposedPorts' -r | sed 's/{}/null/g')
+
+	if [ "$result" != "null" ]; then
+		printf "    %s:\n" "expose"
+		echo "$json" | jq '.[].Config.ExposedPorts | keys[] as $key | [ $key ] | @tsv' -r | awk '{printf("      - \"%s\"\n", $1)}'
+	fi
 }
 
 function writeserviceports() {
 	local json
 	json="$1"
-	printf "    %s:\n" "ports"
-	echo "$json" | jq '.[].NetworkSettings.Ports | to_entries[] | [ (.key), (.value | .[]?.HostPort ), (.value | .[]?.HostIp ) ] | @tsv' -r | awk '! ( NF==1 )' | awk '{printf ("      - \"%s:%s: %s\"\n", $3,$2,$1)}'
+	result=$(echo "$json" | jq '.[].NetworkSettings.Ports' -r | sed 's/{}/null/g')
+
+	if [ "$result" != "null" ]; then
+		printf "    %s:\n" "ports"
+		echo "$json" | jq '.[].NetworkSettings.Ports | to_entries[] | [ (.key), (.value | .[]?.HostPort ), (.value | .[]?.HostIp ) ] | @tsv' -r | awk '! ( NF==1 )' | awk '{printf ("      - \"%s:%s: %s\"\n", $3,$2,$1)}'
+	fi
 }
 
 function writeservicevolumes() {
@@ -94,7 +102,6 @@ function writeservice() {
 	writeprop "$json" "user" '.[].Config.User'
 	writeprop "$json" "working_dir" '.[].Config.WorkingDir'
 	writeprop "$json" "ipc" '.[].HostConfig.IpcMode'
-	writeprop "$json" "mac_address" '.[].NetworkSettings.MacAddress'
 	writeprop "$json" "privileged" '.[].HostConfig.Privileged'
 	writeprop "$json" "restart" '.[].HostConfig.RestartPolicy.Name'
 	writeprop "$json" "read_only" '.[].HostConfig.ReadonlyRootfs'
