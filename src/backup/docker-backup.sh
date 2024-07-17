@@ -831,6 +831,7 @@ function backupsystem() {
 
 function parsearguments() {
 	PARAM_SIMULATE=""
+	PARAM_TEST_NOTIF=""
 
 	for arg in "$@"; do
 		key=$(echo "$arg" | cut -c 3- | cut -d "=" -f1)
@@ -839,6 +840,11 @@ function parsearguments() {
 		simulate)
 			log "trace" "Simulating a backup - not writing any data"
 			PARAM_SIMULATE="true"
+			;;
+		notifications)
+			log "trace" "Performing a notification test and exiting."
+			notify "docker-backup" "Notification test from docker-backup."
+			exit
 			;;
 		esac
 	done
