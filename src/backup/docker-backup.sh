@@ -841,7 +841,7 @@ function parsearguments() {
 			log "trace" "Simulating a backup - not writing any data"
 			PARAM_SIMULATE="true"
 			;;
-		notifications)
+		test-notifications)
 			log "trace" "Performing a notification test and exiting."
 			notify "docker-backup" "Notification test from docker-backup."
 			exit

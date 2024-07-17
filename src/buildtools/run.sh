@@ -23,4 +23,4 @@ docker run -it --rm --name docker-backup-test \
 	-v /media/external/docker-backup:/target \
 	-v $HOME/logs:/logs \
 	"crockerish/docker-backup:$version" \
-	--simulate
+	--test-notifications
