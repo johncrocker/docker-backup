@@ -9,6 +9,6 @@ if [ -z "$container" ]; then
 	container="mealie"
 fi
 
-docker container inspect "$container" > ./inspect.json
+# docker container inspect "$container" > ./inspect.json
 
 cat ./inspect.json | ./createdockercompose.sh
