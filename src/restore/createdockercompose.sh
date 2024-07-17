@@ -94,6 +94,17 @@ function writeprop() {
 	fi
 }
 
+function writeservicedevices() {
+	local json
+	json="$1"
+	result=$(echo "$json" | jq '.[].HostConfig.Devices | to_entries[] | [ (.value) | .PathOnHost, .PathInContainer ] | @tsv' -r | awk '{ printf "      - \"%s:%s\"\n", $1, $2 }')
+
+	if [ ! -z "$result" ]; then
+		printf "    %s:\n" "devices"
+		echo "$result"
+	fi
+}
+
 function writeservice() {
 	local json
 	json="$1"
@@ -125,8 +136,8 @@ function writeservice() {
 	writeprop "$json" "stop_grace_period" '.[].Config.StopTyyimeout'
 	writeprop "$json" "tty" '.[].Config.Tty'
 	writeprop "$json" "mac_address" '.[].NetworkSettings.MacAddress'
-	writeprop "$json" "devices" '.[].HostConfig.Devices'
 
+	writeservicedevices "$json"
 	writeservicenetworks "$json"
 	writeserviceexposedports "$json"
 	writeserviceports "$json"
