@@ -833,9 +833,10 @@ function parsearguments() {
 	PARAM_SIMULATE=""
 	PARAM_TEST_NOTIF=""
 
-	for arg in "$@"; do
+	for arg in "$*"; do
 		key=$(echo "$arg" | cut -c 3- | cut -d "=" -f1)
 		value=$(echo "$arg" | cut -d "=" -f2-)
+
 		case "$key" in
 		simulate)
 			log "trace" "Simulating a backup - not writing any data"
@@ -848,6 +849,8 @@ function parsearguments() {
 			;;
 		esac
 	done
+
+exit
 }
 
 function main() {
