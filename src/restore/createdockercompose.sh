@@ -147,15 +147,24 @@ function writeservice() {
 function writevolumes() {
 	local json
 	json="$1"
-	printf "\nvolumes:\n"
-	echo "$json" | jq '.[].Mounts | keys[] as $key | [.[$key].Type, .[$key].Name,.[$key].Source, .[$key].Destination, .[$key].Mode] | @tsv' -r | sed '/^bind/d' | awk '{ printf "  %s:\n    external: true\n", $2, $4 }'
+	result=$(echo "$json" | jq '.[].Mounts | keys[] as $key | [.[$key].Type, .[$key].Name,.[$key].Source, .[$key].Destination, .[$key].Mode] | @tsv' -r | sed '/^bind/d' | awk '{ printf "  %s:\n    external: true\n", $2, $4 }')
+
+	if [ ! -z "$result" ]; then
+		printf "\nvolumes:\n"
+		echo "$result"
+	fi
 }
 
 function writenetworks() {
 	local json
 	json="$1"
-	printf "\nnetworks:\n"
-	echo "$json" | jq '.[].NetworkSettings.Networks | to_entries[] | [ (.key), (.value | .IPAddress) ] | @tsv ' -r | awk '{ printf "  %s:\n    external: true\n", $1, $2 }'
+	result=$(echo "$json" | jq '.[].NetworkSettings.Networks | to_entries[] | [ (.key), (.value | .IPAddress) ] | @tsv ' -r | awk '{ printf "  %s:\n    external: true\n", $1, $2 }')
+
+	if [ ! -z "$result" ]; then
+		printf "\nnetworks:\n"
+		echo "$result"
+	fi
+
 }
 
 function writeconfigs() {
