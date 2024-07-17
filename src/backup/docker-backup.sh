@@ -2,8 +2,6 @@
 # shellcheck disable=SC2317 # Don't warn about unreachable commands in this file
 # shellcheck disable=SC1090 # Can't follow non-constant source. Use a directive to specify location
 # shellcheck disable=SC2002 # Useless cat. Consider cmd < file | .. or cmd file | .. instead.
-CONTAINER_SIZE=""
-VOLUME_SIZE=""
 
 function log() {
 	declare -A loglevels
@@ -831,9 +829,8 @@ function backupsystem() {
 
 function parsearguments() {
 	PARAM_SIMULATE=""
-	PARAM_TEST_NOTIF=""
 
-	for arg in "$*"; do
+	for arg in "$@"; do
 		key=$(echo "$arg" | cut -c 3- | cut -d "=" -f1)
 		value=$(echo "$arg" | cut -d "=" -f2-)
 
@@ -850,7 +847,7 @@ function parsearguments() {
 		esac
 	done
 
-exit
+	exit
 }
 
 function main() {
