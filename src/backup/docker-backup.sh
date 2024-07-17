@@ -196,7 +196,7 @@ function apprise_notify() {
 		curl -S -s -o /dev/null -X POST \
 			-d "{\"urls\": \"$NOTIF_APPRISE_URLS\",\"body\":\"$message\",\"title\":\"$title\", \"type\": \"$type\"}" \
 			-H "Content-Type: application/json" \
-			"$NOTIF_APPRISE_SERVER_URL""/notify/"
+			"$NOTIF_APPRISE_SERVER_URL""/notify/apprise"
 	fi
 }
 

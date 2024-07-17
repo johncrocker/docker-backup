@@ -20,10 +20,10 @@ docker run -it --rm --name docker-backup-test \
                 -e NOTIF_GOTIFY_ENABLE=false \
                 -e NOTIF_MATTERMOST_ENABLE=false \
                 -e NOTIF_DISCORD_ENABLE=false \
-                -e NOTIF_APPRISE_ENABLE=false \
-                -e NOTIF_PUSHOVER_ENABLE=true \
-                -e NOTIF_PUSHOVER_APP_TOKEN=a2ep2u3kuva7sauc6jx48dx4vb4nue \
-                -e NOTIF_PUSHOVER_USER_KEY=ukmd45b1xhek1jbm4v9g83zzqxjzbm \
+		-e NOTIF_APPRISE_ENABLE=true \
+                -e NOTIF_PUSHOVER_ENABLE=false \
+                -e NOTIF_APPRISE_URLS=pover://ukmd45b1xhek1jbm4v9g83zzqxjzbm@a2ep2u3kuva7sauc6jx48dx4vb4nue?rto=30 \
+                -e NOTIF_APPRISE_SERVER_URL=http://appsrise.apps.home
                 -e TZ=Europe/London \
                 -v /var/run/docker.sock:/var/run/docker.sock:ro \
                 -v /:/source:ro \
