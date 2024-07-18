@@ -7,13 +7,21 @@ function getnetwork() {
 	local json="$1"
 	local net="$2"
 
-	echo "$json" |  jq ".[] | select (.Name==\"$net\")"
+	echo "$json" | jq ".[] | select (.Name==\"$net\")"
 }
 
 function getlabels() {
 	local json
 	json="$1"
 	echo "$json" | jq '.[].Config.Labels | keys[] as $key | [$key,.[$key]] | @tsv' -r | awk '!/^(org.opencontainers|com.docker)/{printf ("      - \"%s=%s\"\n" ,$1,$2)}' | sort -u
+}
+
+function getnetworklabelvalue() {
+	local json
+	local label
+	json="$1"
+	label="$2"
+	echo "$json" | jq '.Labels | keys[] as $key | [$key,.[$key]] | @tsv' -r | awk -v label="$label" '$1==label { print $2 }'
 }
 
 function getcontainerlabelvalue() {
@@ -145,10 +153,12 @@ function writeextrahosts() {
 	fi
 }
 
-
 function writeservice() {
 	local json
+	local networkjson
 	json="$1"
+	networkjson="$2"
+
 	labels=$(getlabels "$json")
 
 	printf "  %s:\n" $(echo "$json" | jq .[].Name -r | cut -b2-)
@@ -216,21 +226,34 @@ function writevolumes() {
 
 function writenetworks() {
 	local json
+	local networkjson
 	json="$1"
-	result=$(echo "$json" | jq '.[].NetworkSettings.Networks | to_entries[] | [ (.key), (.value | .IPAddress) ] | @tsv ' -r | awk '{ printf "  %s:\n    external: true\n    name: %s\n", $1, $1 }')
+	networkjson="$2"
+
+	result=$(echo "$json" | jq '.[].NetworkSettings.Networks | to_entries[] | [ (.key), (.value | .IPAddress) ] | @tsv ' -r | awk '{ printf "%s\n",$1 }')
 
 	if [ ! -z "$result" ]; then
 		printf "\nnetworks:\n"
-		echo "$result"
+		for network in $(echo "$json" | jq '.[].NetworkSettings.Networks | to_entries[] | [ (.key), (.value | .IPAddress) ] | @tsv ' -r | awk '{ printf "%s\n",$1 }'); do
+			netjson=$(getnetwork "$networkjson" "$network")
+			internal=$(getnetworklabelvalue "$netjson" "com.docker.compose.network")
+			printf "  %s:\n" "$network"
+			printf "    name: %s\n" "$network"
+
+			if [ "$internal" != "internal" ]; then
+				printf "    external: true\n"
+			fi
+		done
 	fi
 
 }
 
-json="$(</dev/stdin)"
+json=$(cat "$1")
+networkjson=$(cat "$2")
 
 printf "name: %s\n\n" $(getcontainerlabelvalue "$json" "com.docker.compose.project")
 
 printf "services:\n"
-writeservice "$json"
+writeservice "$json" "$networkjson"
 writevolumes "$json"
 writenetworks "$json"
