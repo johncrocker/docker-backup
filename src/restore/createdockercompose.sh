@@ -3,6 +3,13 @@
 # shellcheck disable=SC1090 # Can't follow non-constant source. Use a directive to specify location
 # shellcheck disable=SC2002 # Useless cat. Consider cmd < file | .. or cmd file | .. instead.
 
+function getnetwork() {
+	local json="$1"
+	local net="$2"
+
+	echo "$json" |  jq ".[] | select (.Name==\"$net\")"
+}
+
 function getlabels() {
 	local json
 	json="$1"
@@ -127,6 +134,18 @@ function writedepends() {
 	fi
 }
 
+function writeextrahosts() {
+	local json
+	json="$1"
+	value=$(echo "$json" | jq '.[].HostConfig.ExtraHosts' -r)
+
+	if [[ ! -z "$value" ]] && [[ ! "$value" = "null" ]] && [[ ! "$value" = "[]" ]]; then
+		printf "    extra_hosts:\n"
+		echo "$json" | jq '.[].HostConfig.ExtraHosts | @tsv' -r | awk -F : '{printf "      - \"%s=%s\"\n" ,$1,$2}'
+	fi
+}
+
+
 function writeservice() {
 	local json
 	json="$1"
@@ -156,7 +175,7 @@ function writeservice() {
 	writeprop "$json" "user" '.[].Config.User'
 	writeprop "$json" "working_dir" '.[].Config.WorkingDir'
 	writeprop "$json" "ipc" '.[].HostConfig.IpcMode'
-	writeprop "$json" " privileged" '.[].HostConfig.Privileged'
+	writeprop "$json" "privileged" '.[].HostConfig.Privileged'
 	writeprop "$json" "restart" '.[].HostConfig.RestartPolicy.Name'
 	writeprop "$json" "read_only" '.[].HostConfig.ReadonlyRootfs'
 	writeprop "$json" "stdin_open" '.[].Config.OpenStdin'
@@ -173,7 +192,7 @@ function writeservice() {
 
 	writeprop "$json" "dns" '.[].HostConfig.Dns'
 	writeprop "$json" "dns_search" '.[].HostConfig.DnsSearch'
-	writeprop "$json" "extra_hosts" '.[].HostConfig.ExtraHosts'
+	writeextrahosts "$json"
 	writeservicevolumes "$json"
 
 	writeprop "$json" "environment" '.[].Config.Env'
@@ -198,7 +217,7 @@ function writevolumes() {
 function writenetworks() {
 	local json
 	json="$1"
-	result=$(echo "$json" | jq '.[].NetworkSettings.Networks | to_entries[] | [ (.key), (.value | .IPAddress) ] | @tsv ' -r | awk '{ printf "  %s:\n    external: true\n", $1, $2 }')
+	result=$(echo "$json" | jq '.[].NetworkSettings.Networks | to_entries[] | [ (.key), (.value | .IPAddress) ] | @tsv ' -r | awk '{ printf "  %s:\n    external: true\n    name: %s\n", $1, $1 }')
 
 	if [ ! -z "$result" ]; then
 		printf "\nnetworks:\n"
