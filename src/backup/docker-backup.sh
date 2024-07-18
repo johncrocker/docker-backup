@@ -320,20 +320,20 @@ function getcontainersusingvolume() {
 }
 
 function getnetworklabelvalue() {
-        local network
-        local label
-        local default
-        local value
-        network="$1"
-        label="$2"
-        default="$3"
+	local network
+	local label
+	local default
+	local value
+	network="$1"
+	label="$2"
+	default="$3"
 
-        value=$(docker network inspect "$network" --format "{{range \$k,\$v:=.Labels}}{{ if eq (\$k) \"$label\" }}{{ \$v }}{{end}}{{end}}")
+	value=$(docker network inspect "$network" --format "{{range \$k,\$v:=.Labels}}{{ if eq (\$k) \"$label\" }}{{ \$v }}{{end}}{{end}}")
 
-        if [[ "$value" = "" ]]; then
-                value="$default"
-        fi
-        echo "$value"
+	if [[ "$value" = "" ]]; then
+		value="$default"
+	fi
+	echo "$value"
 }
 
 function getcontainerlabelvalue() {
@@ -395,7 +395,7 @@ function backupnetworks() {
 		mkdir -p "$targetdir"
 
 		for networkid in $(docker network ls -q --no-trunc); do
-			netflag=$(getnetworklabelvalue "$networkid" "com.docker.compose.network"  "")
+			netflag=$(getnetworklabelvalue "$networkid" "com.docker.compose.network" "")
 
 			if [ "$netflag" != "internal" ]; then
 				if [ ! -f "$target" ]; then
@@ -722,6 +722,7 @@ function backupcontainer() {
 			getnetwork "$network" >>"$targetdir"/networks.sh
 			echo "" >>"$targetdir"/networks.sh
 		done
+		# shellcheck disable=SC2046
 		docker network inspect $(getcontainernetworks "$containername") --format "json" | jq >"$targetdir"/networks.json
 
 		case "$targetfile" in
