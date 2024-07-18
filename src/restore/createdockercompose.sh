@@ -109,6 +109,24 @@ function writeservicedevices() {
 	fi
 }
 
+function writedepends() {
+	local json
+	json="$1"
+	result=$(getcontainerlabelvalue "$json" "com.docker.compose.depends_on")
+
+	if [ ! -z "$result" ]; then
+		printf "    depends_on:\n"
+		for service in $(echo "$result" | tr "," "\n"); do
+			servicename=$(echo "$service" | cut -d ':' -f1)
+			condition=$(echo "$service" | cut -d ':' -f2)
+			required=$(echo "$service" | cut -d ':' -f3)
+			printf "      %s:\n" "$servicename"
+			printf "        condition: %s\n" "$condition"
+			printf "        required: %s\n" "$required"
+		done
+	fi
+}
+
 function writeservice() {
 	local json
 	json="$1"
@@ -120,7 +138,7 @@ function writeservice() {
 	printf "    hostname: %s\n" $(echo "$json" | jq .[].Config.Hostname -r)
 	writeprop "$json" "domainname" '.[].Config.Domainname'
 	printf "    restart: %s\n" $(echo "$json" | jq .[].HostConfig.RestartPolicy.Name -r)
-
+	writedepends "$json"
 	env_file=$(getcontainerlabelvalue "$json" "com.docker.compose.project.environment_file")
 	if [ ! -z "$env_file" ]; then
 		printf "    env_file: %s\n" "$env_file"
@@ -138,7 +156,7 @@ function writeservice() {
 	writeprop "$json" "user" '.[].Config.User'
 	writeprop "$json" "working_dir" '.[].Config.WorkingDir'
 	writeprop "$json" "ipc" '.[].HostConfig.IpcMode'
-	writeprop "$json" "privileged" '.[].HostConfig.Privileged'
+	writeprop "$json" " privileged" '.[].HostConfig.Privileged'
 	writeprop "$json" "restart" '.[].HostConfig.RestartPolicy.Name'
 	writeprop "$json" "read_only" '.[].HostConfig.ReadonlyRootfs'
 	writeprop "$json" "stdin_open" '.[].Config.OpenStdin'
@@ -146,11 +164,13 @@ function writeservice() {
 	writeprop "$json" "tty" '.[].Config.Tty'
 	writeprop "$json" "mac_address" '.[].NetworkSettings.MacAddress'
 
+	writeprop "$json" "network_mode" '.[].HostConfig.NetworkMode'
+
 	writeservicedevices "$json"
 	writeservicenetworks "$json"
 	writeserviceexposedports "$json"
 	writeserviceports "$json"
- 
+
 	writeprop "$json" "dns" '.[].HostConfig.Dns'
 	writeprop "$json" "dns_search" '.[].HostConfig.DnsSearch'
 	writeprop "$json" "extra_hosts" '.[].HostConfig.ExtraHosts'
