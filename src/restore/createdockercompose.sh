@@ -242,10 +242,23 @@ function writenetworks() {
 
 			if [ "$internal" != "internal" ]; then
 				printf "    external: true\n"
+			else
+				printf "    external: false\n"
+				writenetworksettings "$netjson"
+
 			fi
 		done
 	fi
 
+}
+
+function writenetworksettings() {
+	local json
+	json="$1"
+	printf "    ipam:\n"
+	printf "      driver: %s\n" $(echo "$json" | jq .Driver)
+	printf "      config:\n"
+	echo "$json" | jq '.IPAM.Config[] | to_entries[] | [ (.key),(.value)] | @tsv' -r | awk '{ printf "        %s: %s\n",tolower($1),$2 }'
 }
 
 json=$(cat "$1")
@@ -256,4 +269,4 @@ printf "name: %s\n\n" $(getcontainerlabelvalue "$json" "com.docker.compose.proje
 printf "services:\n"
 writeservice "$json" "$networkjson"
 writevolumes "$json"
-writenetworks "$json"
+writenetworks "$json" "$networkjson"
