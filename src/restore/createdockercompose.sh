@@ -3,6 +3,17 @@
 # shellcheck disable=SC1090 # Can't follow non-constant source. Use a directive to specify location
 # shellcheck disable=SC2002 # Useless cat. Consider cmd < file | .. or cmd file | .. instead.
 
+function banner() {
+	echo "                                                        "
+ 	echo "                                                        "
+	echo "  mmm    mmm   mmmmm  mmmm    mmm    mmm    mmm    m mm "
+	echo " #  w	 \"  \"  #\" \"#  # # #  #\" \"#  #\" \"#  #   \"   #\"  #   "
+	echo " #      #   #  # # #  #   #  #   #   \"\"\"m  #\"\"\"\"   #    "
+	echo " \"#mm\"  \"#m#\"  # # #  ##m#\"  \"#m#\"  \"mmm\"  \"#mm\"   #    "
+	echo "                      #                                 "	
+	echo ""
+}
+
 function getnetwork() {
 	local json="$1"
 	local net="$2"
@@ -296,6 +307,8 @@ function writenetworksettings() {
 
 json=$(cat "$1")
 networkjson=$(cat "$2")
+
+banner 1>&2
 
 printf "name: %s\n\n" $(getcontainerlabelvalue "$json" "com.docker.compose.project")
 
