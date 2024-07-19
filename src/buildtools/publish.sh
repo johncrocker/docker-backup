@@ -6,6 +6,7 @@ if [ -z "$version" ]; then
 fi
 
 cd $HOME/src/docker-backup/src
+versiontag=$(cat ./version.tag)
 
 shellcheck ./backup/docker-backup.sh
 
@@ -14,7 +15,6 @@ if [[ "$?" -eq 0 ]]; then
 else
         exit
 fi
-
 shellcheck ./backup/docker-backup-cron.sh
 
 if [[ "$?" -eq 0 ]]; then
@@ -48,7 +48,8 @@ if [ "$version" = "latest" ]; then
 	docker buildx build --push . \
         	--platform linux/amd64,linux/arm64 \
 		-t "crockerish/docker-backup:dev" \
-          	-t "crockerish/docker-backup:$version"
+          	-t "crockerish/docker-backup:$version" \
+		-t "crockerish/docker-backup:$versiontag"
 	else
 	docker buildx build --push . \
         	--platform linux/amd64,linux/arm64 \
