@@ -5,14 +5,12 @@
 
 function banner() {
 	echo "                                                        "
-	echo "                                                        "
+ 	echo "                                                        "
 	echo "  mmm    mmm   mmmmm  mmmm    mmm    mmm    mmm    m mm "
-	echo " #	\"  \"  #\" \"#  # # #  #\" \"#  #\" \"#  #   \"  #\"  #   #\"  \""
+	echo " #  w	 \"  \"  #\" \"#  # # #  #\" \"#  #\" \"#  #   \"   #\"  #   "
 	echo " #      #   #  # # #  #   #  #   #   \"\"\"m  #\"\"\"\"   #    "
 	echo " \"#mm\"  \"#m#\"  # # #  ##m#\"  \"#m#\"  \"mmm\"  \"#mm\"   #    "
-	echo "                      #                                 "
-	echo "                      \"                                 "
-
+	echo "                      #                                 "	
 	echo ""
 }
 
