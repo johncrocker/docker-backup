@@ -3,10 +3,25 @@
 # shellcheck disable=SC1090 # Can't follow non-constant source. Use a directive to specify location
 # shellcheck disable=SC2002 # Useless cat. Consider cmd < file | .. or cmd file | .. instead.
 
+function getnetwork() {
+	local json="$1"
+	local net="$2"
+
+	echo "$json" | jq ".[] | select (.Name==\"$net\")"
+}
+
 function getlabels() {
 	local json
 	json="$1"
 	echo "$json" | jq '.[].Config.Labels | keys[] as $key | [$key,.[$key]] | @tsv' -r | awk '!/^(org.opencontainers|com.docker)/{printf ("      - \"%s=%s\"\n" ,$1,$2)}' | sort -u
+}
+
+function getnetworklabelvalue() {
+	local json
+	local label
+	json="$1"
+	label="$2"
+	echo "$json" | jq '.Labels | keys[] as $key | [$key,.[$key]] | @tsv' -r | awk -v label="$label" '$1==label { print $2 }'
 }
 
 function getcontainerlabelvalue() {
@@ -58,8 +73,33 @@ function writeservicevolumes() {
 
 	printf "    %s:\n" "volumes"
 
-	echo "$json" | jq '.[].Mounts | keys[] as $key | [.[$key].Type, .[$key].Name,.[$key].Source, .[$key].Destination, .[$key].Mode] | @tsv' -r | sed '/^bind/d' | awk '{if ($5) {printf "      - %s:%s:%s\n", $2, $4, $5} else {printf "      - %s:%s\n", $2, $4} }'
-	echo "$json" | jq '.[].Mounts | keys[] as $key | [.[$key].Type, .[$key].Name,.[$key].Source,.[$key].Destination,.[$key].Mode] | @tsv' -r | sed '/^volume/d' | awk '{if ($4) {printf "      - %s:%s:%s\n", $2, $3, $4} else {printf "      - %s:%s\n", $2, $3} }'
+	echo "$json" | jq '.[].Mounts | keys[] as $key | [.[$key].Type, .[$key].Name,.[$key].Source, .[$key].Destination, .[$key].Mode] | @tsv' -r | sed '/^bind/d' | awk '{if ($5 && $5!="z") {printf "      - %s:%s:%s\n", $2, $4, $5} else {printf "      - %s:%s\n", $2, $4} }'
+	echo "$json" | jq '.[].Mounts | keys[] as $key | [.[$key].Type, .[$key].Name,.[$key].Source,.[$key].Destination,.[$key].Mode] | @tsv' -r | sed '/^volume/d' | awk '{if ($4 && $4!="z") {printf "      - %s:%s:%s\n", $2, $3, $4} else {printf "      - %s:%s\n", $2, $3} }'
+}
+
+function getnetworkmode() {
+	local json
+	local networkjson
+	json="$1"
+	networkjson="$2"
+	netmode=$(echo "$json" | jq '.[].HostConfig.NetworkMode' -r)
+	knownnet=$(echo "$networkjson" | jq ".[] | select(.Id==\"$netmode\") | .Id")
+
+	if [ -z "$knownnet" ]; then
+		echo "$netmode"
+	fi
+}
+
+function writenetworkmode() {
+	local json
+	local networkjson
+	json="$1"
+	networkjson="$2"
+	netmode=$(getnetworkmode "$json" "$networkjson")
+
+	if [ ! -z "$netmode" ]; then
+		printf "    network_mode: %s\n" "$netmode"
+	fi
 }
 
 function writeprop() {
@@ -97,17 +137,53 @@ function writeprop() {
 function writeservicedevices() {
 	local json
 	json="$1"
-	result=$(echo "$json" | jq '.[].HostConfig.Devices | to_entries[] | [ (.value) | .PathOnHost, .PathInContainer ] | @tsv' -r | awk '{ printf "      - \"%s:%s\"\n", $1, $2 }')
+
+	result=$(echo "$json" | jq '.[].HostConfig.Devices' -r -c)
+	if [ "$result" != "null" ]; then
+		result=$(echo "$json" | jq '.[].HostConfig.Devices | to_entries[] | [ (.value) | .PathOnHost, .PathInContainer ] | @tsv' -r | awk '{ printf "      - \"%s:%s\"\n", $1, $2 }')
+
+		if [ ! -z "$result" ]; then
+			printf "    %s:\n" "devices"
+			echo "$result"
+		fi
+	fi
+}
+
+function writedepends() {
+	local json
+	json="$1"
+	result=$(getcontainerlabelvalue "$json" "com.docker.compose.depends_on")
 
 	if [ ! -z "$result" ]; then
-		printf "    %s:\n" "devices"
-		echo "$result"
+		printf "    depends_on:\n"
+		for service in $(echo "$result" | tr "," "\n"); do
+			servicename=$(echo "$service" | cut -d ':' -f1)
+			condition=$(echo "$service" | cut -d ':' -f2)
+			required=$(echo "$service" | cut -d ':' -f3)
+			printf "      %s:\n" "$servicename"
+			printf "        condition: %s\n" "$condition"
+			printf "        required: %s\n" "$required"
+		done
+	fi
+}
+
+function writeextrahosts() {
+	local json
+	json="$1"
+	value=$(echo "$json" | jq '.[].HostConfig.ExtraHosts' -r)
+
+	if [[ ! -z "$value" ]] && [[ ! "$value" = "null" ]] && [[ ! "$value" = "[]" ]]; then
+		printf "    extra_hosts:\n"
+		echo "$json" | jq '.[].HostConfig.ExtraHosts | @tsv' -r | awk -F : '{printf "      - \"%s=%s\"\n" ,$1,$2}'
 	fi
 }
 
 function writeservice() {
 	local json
+	local networkjson
 	json="$1"
+	networkjson="$2"
+	netmode=$(getnetworkmode "$json" "$networkjson")
 	labels=$(getlabels "$json")
 
 	printf "  %s:\n" $(echo "$json" | jq .[].Name -r | cut -b2-)
@@ -116,6 +192,11 @@ function writeservice() {
 	printf "    hostname: %s\n" $(echo "$json" | jq .[].Config.Hostname -r)
 	writeprop "$json" "domainname" '.[].Config.Domainname'
 	printf "    restart: %s\n" $(echo "$json" | jq .[].HostConfig.RestartPolicy.Name -r)
+	writedepends "$json"
+	env_file=$(getcontainerlabelvalue "$json" "com.docker.compose.project.environment_file")
+	if [ ! -z "$env_file" ]; then
+		printf "    env_file: %s\n" "$env_file"
+	fi
 
 	writeprop "$json" "command" '.[].Config.Cmd' 'array'
 	writeprop "$json" "entrypoint" '.[].Config.Entrypoint'
@@ -137,14 +218,19 @@ function writeservice() {
 	writeprop "$json" "tty" '.[].Config.Tty'
 	writeprop "$json" "mac_address" '.[].NetworkSettings.MacAddress'
 
+	writenetworkmode "$json" "$networkjson"
+
 	writeservicedevices "$json"
-	writeservicenetworks "$json"
+	if [ -z "$netmode" ]; then
+		writeservicenetworks "$json"
+	fi
+
 	writeserviceexposedports "$json"
 	writeserviceports "$json"
 
 	writeprop "$json" "dns" '.[].HostConfig.Dns'
 	writeprop "$json" "dns_search" '.[].HostConfig.DnsSearch'
-	writeprop "$json" "extra_hosts" '.[].HostConfig.ExtraHosts'
+	writeextrahosts "$json"
 	writeservicevolumes "$json"
 
 	writeprop "$json" "environment" '.[].Config.Env'
@@ -168,28 +254,52 @@ function writevolumes() {
 
 function writenetworks() {
 	local json
+	local networkjson
 	json="$1"
-	result=$(echo "$json" | jq '.[].NetworkSettings.Networks | to_entries[] | [ (.key), (.value | .IPAddress) ] | @tsv ' -r | awk '{ printf "  %s:\n    external: true\n", $1, $2 }')
+	networkjson="$2"
+	netmode=$(getnetworkmode "$json" "$networkjson")
+
+	if [ ! -z "$netmode" ]; then
+		return
+	fi
+
+	result=$(echo "$json" | jq '.[].NetworkSettings.Networks | to_entries[] | [ (.key), (.value | .IPAddress) ] | @tsv ' -r | awk '{ printf "%s\n",$1 }')
 
 	if [ ! -z "$result" ]; then
 		printf "\nnetworks:\n"
-		echo "$result"
+		for network in $(echo "$json" | jq '.[].NetworkSettings.Networks | to_entries[] | [ (.key), (.value | .IPAddress) ] | @tsv ' -r | awk '{ printf "%s\n",$1 }'); do
+			netjson=$(getnetwork "$networkjson" "$network")
+			internal=$(getnetworklabelvalue "$netjson" "com.docker.compose.network")
+			printf "  %s:\n" "$network"
+			printf "    name: %s\n" "$network"
+
+			if [ "$internal" != "internal" ]; then
+				printf "    external: true\n"
+			else
+				printf "    external: false\n"
+				writenetworksettings "$netjson"
+
+			fi
+		done
 	fi
 
 }
 
-function writeconfigs() {
+function writenetworksettings() {
 	local json
 	json="$1"
-	printf "\nconfigs: {}\n"
+	printf "    ipam:\n"
+	printf "      driver: %s\n" $(echo "$json" | jq .Driver)
+	printf "      config:\n"
+	echo "$json" | jq '.IPAM.Config[] | to_entries[] | [ (.key),(.value)] | @tsv' -r | awk '{ printf "        %s: %s\n",tolower($1),$2 }'
 }
 
-json="$(</dev/stdin)"
+json=$(cat "$1")
+networkjson=$(cat "$2")
 
 printf "name: %s\n\n" $(getcontainerlabelvalue "$json" "com.docker.compose.project")
 
 printf "services:\n"
-writeservice "$json"
+writeservice "$json" "$networkjson"
 writevolumes "$json"
-writenetworks "$json"
-writeconfigs "$json"
+writenetworks "$json" "$networkjson"
