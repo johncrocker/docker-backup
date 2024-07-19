@@ -6,6 +6,7 @@
 
 container="$1"
 basedir=$(ls -td -- /media/external/docker-backup/* | head -n 1)
+echo  "basedir=$basedir"
 
 if [ -z "$container" ]; then
 	container="dbgate"

@@ -77,6 +77,31 @@ function writeservicevolumes() {
 	echo "$json" | jq '.[].Mounts | keys[] as $key | [.[$key].Type, .[$key].Name,.[$key].Source,.[$key].Destination,.[$key].Mode] | @tsv' -r | sed '/^volume/d' | awk '{if ($4) {printf "      - %s:%s:%s\n", $2, $3, $4} else {printf "      - %s:%s\n", $2, $3} }'
 }
 
+function getnetworkmode() {
+	local json
+	local networkjson
+	json="$1"
+	networkjson="$2"
+	netmode=$(echo "$json" | jq '.[].HostConfig.NetworkMode' -r)
+	knownnet=$(echo "$networkjson" | jq ".[] | select(.Id==\"$netmode\") | .Id")
+
+	if [ -z "$knownnet" ]; then
+		echo "$netmode"
+	fi
+}
+
+function writenetworkmode() {
+	local json
+	local networkjson
+	json="$1"
+	networkjson="$2"
+	netmode=$(getnetworkmode "$json" "$networkjson")
+
+	if [ ! -z "$netmode" ]; then
+		printf "    network_mode: %s\n" "$netmode"
+	fi
+}
+
 function writeprop() {
 	local json
 	local prop
@@ -158,7 +183,7 @@ function writeservice() {
 	local networkjson
 	json="$1"
 	networkjson="$2"
-
+	netmode=$(getnetworkmode "$json" "$networkjson")
 	labels=$(getlabels "$json")
 
 	printf "  %s:\n" $(echo "$json" | jq .[].Name -r | cut -b2-)
@@ -193,10 +218,13 @@ function writeservice() {
 	writeprop "$json" "tty" '.[].Config.Tty'
 	writeprop "$json" "mac_address" '.[].NetworkSettings.MacAddress'
 
-	writeprop "$json" "network_mode" '.[].HostConfig.NetworkMode'
+	writenetworkmode "$json" "$networkjson"
 
 	writeservicedevices "$json"
-	writeservicenetworks "$json"
+	if [ -z "$netmode" ]; then
+		writeservicenetworks "$json"
+	fi
+
 	writeserviceexposedports "$json"
 	writeserviceports "$json"
 
@@ -229,6 +257,11 @@ function writenetworks() {
 	local networkjson
 	json="$1"
 	networkjson="$2"
+	netmode=$(getnetworkmode "$json" "$networkjson")
+
+	if [ ! -z "$netmode" ]; then
+		return
+	fi
 
 	result=$(echo "$json" | jq '.[].NetworkSettings.Networks | to_entries[] | [ (.key), (.value | .IPAddress) ] | @tsv ' -r | awk '{ printf "%s\n",$1 }')
 
