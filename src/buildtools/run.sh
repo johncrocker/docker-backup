@@ -8,6 +8,7 @@ fi
 cd $HOME/src/docker-backup/src
 
 docker run -it --rm --name docker-backup-test \
+		-e TZ=Europe/London \
                 -e BACKUP_LOGLEVEL=trace \
                 -e BACKUP_PAUSECONTAINERS=false \
                 -e BACKUP_COMPRESS=true \

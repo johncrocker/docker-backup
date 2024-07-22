@@ -3,6 +3,10 @@
 export DOCKER_BACKUP_COMTAINERID=""
 export INSIDE_CONTAINER=""
 
+if [ -n "$TZ" ]; then
+	ln -snf /usr/share/zoneinfo/"$TZ" /etc/localtime && echo "$TZ" >/etc/timezone
+fi
+
 if [ -f /.dockerenv ]; then
 	containerid=$(cat /etc/hostname)
 	export INSIDE_CONTAINER="true"
