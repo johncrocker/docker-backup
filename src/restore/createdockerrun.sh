@@ -5,12 +5,12 @@
 
 function banner() {
 	echo "                                                        "
- 	echo "                                                        "
+	echo "                                                        "
 	echo "  mmm    mmm   mmmmm  mmmm    mmm    mmm    mmm    m mm "
 	echo " #  w	 \"  \"  #\" \"#  # # #  #\" \"#  #\" \"#  #   \"   #\"  #   "
 	echo " #      #   #  # # #  #   #  #   #   \"\"\"m  #\"\"\"\"   #    "
 	echo " \"#mm\"  \"#m#\"  # # #  ##m#\"  \"#m#\"  \"mmm\"  \"#mm\"   #    "
-	echo "                      #                                 "	
+	echo "                      #                                 "
 	echo ""
 }
 
@@ -24,7 +24,13 @@ function getnetwork() {
 function getlabels() {
 	local json
 	json="$1"
-	echo "$json" | jq '.[].Config.Labels | keys[] as $key | [$key,.[$key]] | @tsv' -r | awk '!/^(org.opencontainers|com.docker)/{printf ("      - \"%s=%s\"\n" ,$1,$2)}' | sort -u
+	echo "$json" | jq '.[].Config.Labels | keys[] as $key | [$key,.[$key]] | @tsv' -r | awk '!/^(org.opencontainers|com.docker)/{printf ("\t--label \"%s=%s\" \\\n" ,$1,$2)}' | sort -u
+}
+
+function getenv() {
+  local json
+  json="$1"
+  echo "$json" | jq '.[].Config.Env | @tsv' -r | tr '\t' '\n' | awk '!/^(PATH)/{printf ("\t--env \"%s\" \\\n" ,$1)}' | sort -u
 }
 
 function getnetworklabelvalue() {
@@ -133,14 +139,13 @@ function writeprop() {
 		if [[ "$value" =~ \[.* ]]; then
 			if [ "$format" = "array" ]; then
 				value=$(echo "$json" | jq "$path" -r -c)
-				printf "    %s: %s\n" "$prop" "$value"
+				printf "\t--%s \"%s\" \\\\\n" "$prop" "$value"
 			else
 				value=$(echo "$json" | jq "$path | @tsv" -r)
-				printf "    %s:\n" "$prop"
-				echo "$value" | tr "\t" "\n" | sed -e 's/^/      - /'
+				printf "\t--%s \"%s\" \\\\\n" "$prop" $(echo "$value" | tr "\t" " ")
 			fi
 		else
-			printf "    %s: %s\n" "$prop" "$value"
+			printf "\t--%s \"%s\" \\\\\n" "$prop" "$value"
 		fi
 	fi
 }
@@ -186,69 +191,6 @@ function writeextrahosts() {
 	if [[ ! -z "$value" ]] && [[ ! "$value" = "null" ]] && [[ ! "$value" = "[]" ]]; then
 		printf "    extra_hosts:\n"
 		echo "$json" | jq '.[].HostConfig.ExtraHosts | @tsv' -r | awk -F : '{printf "      - \"%s=%s\"\n" ,$1,$2}'
-	fi
-}
-
-function writeservice() {
-	local json
-	local networkjson
-	json="$1"
-	networkjson="$2"
-	netmode=$(getnetworkmode "$json" "$networkjson")
-	labels=$(getlabels "$json")
-
-	printf "  %s:\n" $(echo "$json" | jq .[].Name -r | cut -b2-)
-	printf "    image: %s\n" $(echo "$json" | jq .[].Config.Image -r)
-	printf "    container_name: %s\n" $(echo "$json" | jq .[].Name -r | cut -b2-)
-	printf "    hostname: %s\n" $(echo "$json" | jq .[].Config.Hostname -r)
-	writeprop "$json" "domainname" '.[].Config.Domainname'
-	printf "    restart: %s\n" $(echo "$json" | jq .[].HostConfig.RestartPolicy.Name -r)
-	writedepends "$json"
-	env_file=$(getcontainerlabelvalue "$json" "com.docker.compose.project.environment_file")
-	if [ ! -z "$env_file" ]; then
-		printf "    env_file: %s\n" "$env_file"
-	fi
-
-	writeprop "$json" "command" '.[].Config.Cmd' 'array'
-	writeprop "$json" "entrypoint" '.[].Config.Entrypoint'
-
-	writeprop "$json" "security_opt" '.[].HostConfig.SecurityOpt'
-	writeprop "$json" "ulimits" '.[].HostConfig.Ulimits'
-	writeprop "$json" "cap_add" '.[].HostConfig.CapAdd'
-	writeprop "$json" "cap_drop" '.[].HostConfig.CapDrop'
-	writeprop "$json" "cgroup" '.[].HostConfig.Cgroup'
-	writeprop "$json" "cgroup_parent" '.[].HostConfig.CgroupParent'
-	writeprop "$json" "user" '.[].Config.User'
-	writeprop "$json" "working_dir" '.[].Config.WorkingDir'
-	writeprop "$json" "ipc" '.[].HostConfig.IpcMode'
-	writeprop "$json" "privileged" '.[].HostConfig.Privileged'
-	writeprop "$json" "restart" '.[].HostConfig.RestartPolicy.Name'
-	writeprop "$json" "read_only" '.[].HostConfig.ReadonlyRootfs'
-	writeprop "$json" "stdin_open" '.[].Config.OpenStdin'
-	writeprop "$json" "stop_grace_period" '.[].Config.StopTyyimeout'
-	writeprop "$json" "tty" '.[].Config.Tty'
-	writeprop "$json" "mac_address" '.[].NetworkSettings.MacAddress'
-
-	writenetworkmode "$json" "$networkjson"
-
-	writeservicedevices "$json"
-	if [ -z "$netmode" ]; then
-		writeservicenetworks "$json"
-	fi
-
-	writeserviceexposedports "$json"
-	writeserviceports "$json"
-
-	writeprop "$json" "dns" '.[].HostConfig.Dns'
-	writeprop "$json" "dns_search" '.[].HostConfig.DnsSearch'
-	writeextrahosts "$json"
-	writeservicevolumes "$json"
-
-	writeprop "$json" "environment" '.[].Config.Env'
-
-	if [ ! -z "$labels" ]; then
-		printf "    labels:\n"
-		printf "%s\n" "$labels"
 	fi
 }
 
@@ -301,8 +243,58 @@ function writenetworksettings() {
 	json="$1"
 	printf "    ipam:\n"
 	printf "      driver: %s\n" $(echo "$json" | jq .Driver)
-	printf "      config:\n"
+	printf "      config:\n"%
 	echo "$json" | jq '.IPAM.Config[] | to_entries[] | [ (.key),(.value)] | @tsv' -r | awk '{ printf "        %s: %s\n",tolower($1),$2 }'
+}
+
+function writedockerrun() {
+	local json
+	local networkjson
+	json="$1"
+	networkjson="$2"
+	netmode=$(getnetworkmode "$json" "$networkjson")
+	labels=$(getlabels "$json")
+	envs=$(getenv "$json")
+	containername=$(echo "$json" | jq .[].Name -r | cut -b2-)
+	printf "docker container run -d \\\\\n"
+	printf "\t--name \"%s\" \\\\\n" "$containername"
+	writeprop "$json" "hostname" '.[].Config.Hostname'
+	writeprop "$json" "domainname" '.[].Config.Domainname'
+	writeprop "$json" "restart" '.[].HostConfig.RestartPolicy.Name'
+        writeprop "$json" "command" '.[].Config.Cmd' 'array'
+        writeprop "$json" "entrypoint" '.[].Config.Entrypoint'
+        writeprop "$json" "security_opt" '.[].HostConfig.SecurityOpt'
+        writeprop "$json" "ulimits" '.[].HostConfig.Ulimits'
+        writeprop "$json" "cap_add" '.[].HostConfig.CapAdd'
+        writeprop "$json" "cap_drop" '.[].HostConfig.CapDrop'
+        writeprop "$json" "cgroup" '.[].HostConfig.Cgroup'
+        writeprop "$json" "cgroup_parent" '.[].HostConfig.CgroupParent'
+        writeprop "$json" "user" '.[].Config.User'
+        writeprop "$json" "working_dir" '.[].Config.WorkingDir'
+        writeprop "$json" "ipc" '.[].HostConfig.IpcMode'
+        writeprop "$json" "privileged" '.[].HostConfig.Privileged'
+        writeprop "$json" "read_only" '.[].HostConfig.ReadonlyRootfs'
+        writeprop "$json" "stdin_open" '.[].Config.OpenStdin'
+        writeprop "$json" "stop_grace_period" '.[].Config.StopTyyimeout'
+        writeprop "$json" "tty" '.[].Config.Tty'
+        writeprop "$json" "mac_address" '.[].NetworkSettings.MacAddress'
+        writeprop "$json" "dns" '.[].HostConfig.Dns'
+        writeprop "$json" "dns_search" '.[].HostConfig.DnsSearch'
+
+	env_file=$(getcontainerlabelvalue "$json" "com.docker.compose.project.environment_file")
+	if [ ! -z "$env_file" ]; then
+		printf "\t--env_file %s \\\\\n" "$env_file"
+	fi
+
+	if [ ! -z "$envs" ]; then
+		printf "%s\n" "$envs"
+	fi
+
+	if [ ! -z "$labels" ]; then
+		printf "%s\n" "$labels"
+	fi
+
+	printf "\t%s\n" $(echo "$json" | jq .[].Config.Image -r)
 }
 
 json=$(cat "$1")
@@ -310,9 +302,8 @@ networkjson=$(cat "$2")
 
 banner 1>&2
 
-printf "name: %s\n\n" $(getcontainerlabelvalue "$json" "com.docker.compose.project")
+printf "# Project: %s\n\n" $(getcontainerlabelvalue "$json" "com.docker.compose.project")
 
-printf "services:\n"
-writeservice "$json" "$networkjson"
-writevolumes "$json"
-writenetworks "$json" "$networkjson"
+writedockerrun "$json" "$networkjson"
+#writevolumes "$json"
+#writenetworks "$json" "$networkjson"
