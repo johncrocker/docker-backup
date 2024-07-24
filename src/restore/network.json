@@ -1,0 +1,305 @@
+[
+  {
+    "Name": "infrastructure",
+    "Id": "f7e6a250ffed88b51c3aa7bab065b60dd4b75315ff9b1f8f8295c8d3e4bab44c",
+    "Created": "2024-06-17T15:35:02.53250533+01:00",
+    "Scope": "local",
+    "Driver": "bridge",
+    "EnableIPv6": false,
+    "IPAM": {
+      "Driver": "default",
+      "Options": {},
+      "Config": [
+        {
+          "Subnet": "172.18.0.0/16",
+          "Gateway": "172.18.0.1"
+        }
+      ]
+    },
+    "Internal": false,
+    "Attachable": false,
+    "Ingress": false,
+    "ConfigFrom": {
+      "Network": ""
+    },
+    "ConfigOnly": false,
+    "Containers": {
+      "00ab3e71349a1dd41c4a0ae56ae2e8dc47b09209b00e3b728e409365f7b63caa": {
+        "Name": "photoprism",
+        "EndpointID": "1a74fdd2246f3633823d55fe84d9a63719d4fbedbfcca6a5ed3916e111e6d63f",
+        "MacAddress": "02:42:ac:12:00:0b",
+        "IPv4Address": "172.18.0.11/16",
+        "IPv6Address": ""
+      },
+      "07448b66168ed85275d56524c77bc23ef2a6860a15ae0a8cb9593f47a1bef602": {
+        "Name": "mariadb",
+        "EndpointID": "52f14b658838fa8fd40f25158fcbd6e78a80f6a728e513637cc4d2042b7a15be",
+        "MacAddress": "02:42:ac:12:00:c8",
+        "IPv4Address": "172.18.0.200/16",
+        "IPv6Address": ""
+      },
+      "08d5163342564a31a10d22878329b730a8dc43578b7871dbed5bb28c829791f3": {
+        "Name": "postgres",
+        "EndpointID": "ac073e5b27cda8ad7d46e811b74ab587651f63e89076a888335983ebff389dd2",
+        "MacAddress": "02:42:ac:12:00:c9",
+        "IPv4Address": "172.18.0.201/16",
+        "IPv6Address": ""
+      },
+      "1c7eb12f731203df63d2762f7c7f2c1f60a66d27f21b7bce88f1cbbef65e5a00": {
+        "Name": "traefik",
+        "EndpointID": "0792d85f4ddb2e67d9b4d4d603b1600b41e6ff3767246a05355ea3995a4fc1ec",
+        "MacAddress": "02:42:ac:12:00:02",
+        "IPv4Address": "172.18.0.2/16",
+        "IPv6Address": ""
+      },
+      "1f8c435b0b89bdecdf72ef0de26b07b7053e2bc317e0ac8cae73db3e7f80cd6d": {
+        "Name": "dash",
+        "EndpointID": "4351d372edf15f7676cfe8d817e12c3566e05517c38ab6ce871bc623aaa30a66",
+        "MacAddress": "02:42:ac:12:00:08",
+        "IPv4Address": "172.18.0.8/16",
+        "IPv6Address": ""
+      },
+      "2fb5cfed326dfd4567d6270b66e016a577fdd606d310c064617c91a661bf734a": {
+        "Name": "dbgate",
+        "EndpointID": "c608a81a29aea0b567aa8afa73842a3df50bc0c0a3ddfb1d99fbb93ab56af717",
+        "MacAddress": "02:42:ac:12:00:05",
+        "IPv4Address": "172.18.0.5/16",
+        "IPv6Address": ""
+      },
+      "35b9c07fe8bc5c2912fe1d5e7780695bbcd5e576690f0e393db4ede820d9c6ba": {
+        "Name": "mealie",
+        "EndpointID": "0b6a4055b229f749cb5f215fec2f48712d9a10e4d04eb805f63b6d5bccab558d",
+        "MacAddress": "02:42:ac:12:00:11",
+        "IPv4Address": "172.18.0.17/16",
+        "IPv6Address": ""
+      },
+      "3ff3dddfdd2d76e20bead19bd2affd83cea89b435bee9d27a78d8bfc4edaf872": {
+        "Name": "whatsupdocker",
+        "EndpointID": "b1d83450410da4b372ffc0d2a3bb62de186b9e21ac60f1a2350870f0bb771b24",
+        "MacAddress": "02:42:ac:12:00:0c",
+        "IPv4Address": "172.18.0.12/16",
+        "IPv6Address": ""
+      },
+      "4f8a77b6ce2c37cbc3cb18743c7945e3a070ff83ff962f26761e444a28a9060b": {
+        "Name": "glances",
+        "EndpointID": "2a4639253f4d827a60935ae2f23905ae2fac0319c671e2a5af38766802a8f197",
+        "MacAddress": "02:42:ac:12:00:0e",
+        "IPv4Address": "172.18.0.14/16",
+        "IPv6Address": ""
+      },
+      "5b4d7131b467c1c240974baed9e08481507d38c3db40868bf8fad0a369b51986": {
+        "Name": "youtubedl",
+        "EndpointID": "185c8e42c57201c8a678a73aeb346a8b1c44b65c64dd453fffd3be561a1748f9",
+        "MacAddress": "02:42:ac:12:00:04",
+        "IPv4Address": "172.18.0.4/16",
+        "IPv6Address": ""
+      },
+      "737a0190520059e4b3a8859f476d1cc85c22192b0a891be80faf84ae16fe9cba": {
+        "Name": "webtop",
+        "EndpointID": "cf6506bff76dad8178aec1570543db9c3355658ead79f7f1f37c04c8b351fbf3",
+        "MacAddress": "02:42:ac:12:00:03",
+        "IPv4Address": "172.18.0.3/16",
+        "IPv6Address": ""
+      },
+      "742d2b0ccf2f373658c05841b0fe031e96b41992987a7d458c88b589901d3c57": {
+        "Name": "pyload-ng",
+        "EndpointID": "25659e2b112b002e219abc35bb2b44f9a5d22a596a4ac5532c41362d1d58a68b",
+        "MacAddress": "02:42:ac:12:00:0d",
+        "IPv4Address": "172.18.0.13/16",
+        "IPv6Address": ""
+      },
+      "7ff451e2e0a6aa50aea65fa8713454e4ae2f58d7bf4d98ece2929e90c6824315": {
+        "Name": "watchtower",
+        "EndpointID": "904cd902efbade8982f55e18201ecaab0219a9dc34bd39ecb173c008ce20856b",
+        "MacAddress": "02:42:ac:12:00:06",
+        "IPv4Address": "172.18.0.6/16",
+        "IPv6Address": ""
+      },
+      "9544e0c9b573a77e32c5ce5c93cdcab8512c01b476cc9943f556ae287f92d675": {
+        "Name": "uptime-kuma",
+        "EndpointID": "1ab2878fc66dfbea9852c63d40529bb09f0c293f44990148ccf8496867cb9185",
+        "MacAddress": "02:42:ac:12:00:0a",
+        "IPv4Address": "172.18.0.10/16",
+        "IPv6Address": ""
+      },
+      "a651647e51509d617f872d3b66a220ebd441ddfe2e17ce5e8d9792eee2fc2634": {
+        "Name": "code-server",
+        "EndpointID": "ca948ab711c7634f440f0707c6c93412aea69f98f57e707bd8979fcc06b60737",
+        "MacAddress": "02:42:ac:12:00:07",
+        "IPv4Address": "172.18.0.7/16",
+        "IPv6Address": ""
+      },
+      "cacadb28896e92b0bd733ae2f2690570a58cd4b67d75e633a33ffe91c43455c7": {
+        "Name": "apprise",
+        "EndpointID": "c63e1ffec872ae6cae3c85bdbae220ec6185dfe054069a1ad36304f00b48630b",
+        "MacAddress": "02:42:ac:12:00:09",
+        "IPv4Address": "172.18.0.9/16",
+        "IPv6Address": ""
+      },
+      "d88f6fe12e1b3c86c11309f9bc13893a667feec5ae436cba2da17e8e86a128cb": {
+        "Name": "homarr",
+        "EndpointID": "e694ecf1c7542b3c9329ed3a623ff663580ad81d45f972a35755c4162b8c6462",
+        "MacAddress": "02:42:ac:12:00:10",
+        "IPv4Address": "172.18.0.16/16",
+        "IPv6Address": ""
+      }
+    },
+    "Options": {},
+    "Labels": {}
+  },
+  {
+    "Name": "proxy",
+    "Id": "1141d83c2565cf0aa2da6d222ce79db59498090e2fba0a356fbe9695e5a9fe09",
+    "Created": "2024-06-17T15:35:53.472248281+01:00",
+    "Scope": "local",
+    "Driver": "bridge",
+    "EnableIPv6": false,
+    "IPAM": {
+      "Driver": "default",
+      "Options": {},
+      "Config": [
+        {
+          "Subnet": "172.19.0.0/16",
+          "Gateway": "172.19.0.1"
+        }
+      ]
+    },
+    "Internal": false,
+    "Attachable": false,
+    "Ingress": false,
+    "ConfigFrom": {
+      "Network": ""
+    },
+    "ConfigOnly": false,
+    "Containers": {
+      "00ab3e71349a1dd41c4a0ae56ae2e8dc47b09209b00e3b728e409365f7b63caa": {
+        "Name": "photoprism",
+        "EndpointID": "f5763d1d56a4aa3a4f7eb69342068c5835d79d5f68d0f6b12fcdd6d9a825dd32",
+        "MacAddress": "02:42:ac:13:00:0e",
+        "IPv4Address": "172.19.0.14/16",
+        "IPv6Address": ""
+      },
+      "1bf1d1264c1d6ceeb0557604560b292caee640842dc179727c0317bab4112226": {
+        "Name": "linkding",
+        "EndpointID": "27e8b064bc786c2e0dd463a8260b83e037f04f480e53a959713fd2cfed407f10",
+        "MacAddress": "02:42:ac:13:00:03",
+        "IPv4Address": "172.19.0.3/16",
+        "IPv6Address": ""
+      },
+      "1c7eb12f731203df63d2762f7c7f2c1f60a66d27f21b7bce88f1cbbef65e5a00": {
+        "Name": "traefik",
+        "EndpointID": "1dff18ecb9caa67719b1b6d37b00770103b44b0ccf3fbb1e2b630431bf5f47da",
+        "MacAddress": "02:42:ac:13:00:0f",
+        "IPv4Address": "172.19.0.15/16",
+        "IPv6Address": ""
+      },
+      "1f8c435b0b89bdecdf72ef0de26b07b7053e2bc317e0ac8cae73db3e7f80cd6d": {
+        "Name": "dash",
+        "EndpointID": "7f755013a5ddeb1791ddff6b8ef2c001e992a28a42f57f4f620343486e1dece0",
+        "MacAddress": "02:42:ac:13:00:0c",
+        "IPv4Address": "172.19.0.12/16",
+        "IPv6Address": ""
+      },
+      "2fb5cfed326dfd4567d6270b66e016a577fdd606d310c064617c91a661bf734a": {
+        "Name": "dbgate",
+        "EndpointID": "be922507af4dd927e442b9b34c1776166f708c04ce95a2743ab32ff81b0d62c0",
+        "MacAddress": "02:42:ac:13:00:0b",
+        "IPv4Address": "172.19.0.11/16",
+        "IPv6Address": ""
+      },
+      "311b84d1c20ebad48108cb20665547dd0ae9e18c7c571140b67e02935a9b2d00": {
+        "Name": "note-mark",
+        "EndpointID": "dd11bb1ddae29135f1d10cc09f2a32e628ea744a53186feae61c65a8a29d6a7c",
+        "MacAddress": "02:42:ac:13:00:04",
+        "IPv4Address": "172.19.0.4/16",
+        "IPv6Address": ""
+      },
+      "35b9c07fe8bc5c2912fe1d5e7780695bbcd5e576690f0e393db4ede820d9c6ba": {
+        "Name": "mealie",
+        "EndpointID": "a8a6ed128450f2fd17db38db97e65de1a8cccde59057865184eb8975c969c2d1",
+        "MacAddress": "02:42:ac:13:00:06",
+        "IPv4Address": "172.19.0.6/16",
+        "IPv6Address": ""
+      },
+      "3ff3dddfdd2d76e20bead19bd2affd83cea89b435bee9d27a78d8bfc4edaf872": {
+        "Name": "whatsupdocker",
+        "EndpointID": "525d7bd06040b2a5d20e6be4f5b6ba45d7e9a129b354cab6a1064b0044c9f7bd",
+        "MacAddress": "02:42:ac:13:00:10",
+        "IPv4Address": "172.19.0.16/16",
+        "IPv6Address": ""
+      },
+      "4f8a77b6ce2c37cbc3cb18743c7945e3a070ff83ff962f26761e444a28a9060b": {
+        "Name": "glances",
+        "EndpointID": "4737e91af6049345af96be5f7198e745addbfc98006158169882fe1ab4c50dcb",
+        "MacAddress": "02:42:ac:13:00:12",
+        "IPv4Address": "172.19.0.18/16",
+        "IPv6Address": ""
+      },
+      "5b4d7131b467c1c240974baed9e08481507d38c3db40868bf8fad0a369b51986": {
+        "Name": "youtubedl",
+        "EndpointID": "f33a02a7b4dc977daef67acba3ce5a164ff708899b4d48ea93c6367a4a609cbf",
+        "MacAddress": "02:42:ac:13:00:08",
+        "IPv4Address": "172.19.0.8/16",
+        "IPv6Address": ""
+      },
+      "737a0190520059e4b3a8859f476d1cc85c22192b0a891be80faf84ae16fe9cba": {
+        "Name": "webtop",
+        "EndpointID": "d5132b91270c35680777ecc47c1431547701d380c50f1dc24b93cde296a111b0",
+        "MacAddress": "02:42:ac:13:00:07",
+        "IPv4Address": "172.19.0.7/16",
+        "IPv6Address": ""
+      },
+      "742d2b0ccf2f373658c05841b0fe031e96b41992987a7d458c88b589901d3c57": {
+        "Name": "pyload-ng",
+        "EndpointID": "6940fbf81fc0ef5976057096e9194495c8432b9ac18b57bfca63755a2dfa644d",
+        "MacAddress": "02:42:ac:13:00:11",
+        "IPv4Address": "172.19.0.17/16",
+        "IPv6Address": ""
+      },
+      "9544e0c9b573a77e32c5ce5c93cdcab8512c01b476cc9943f556ae287f92d675": {
+        "Name": "uptime-kuma",
+        "EndpointID": "d818d5ad82298dd84a1f4d3438eca54eac05f4c0b81817ae29f4bc612145ed7e",
+        "MacAddress": "02:42:ac:13:00:0d",
+        "IPv4Address": "172.19.0.13/16",
+        "IPv6Address": ""
+      },
+      "a651647e51509d617f872d3b66a220ebd441ddfe2e17ce5e8d9792eee2fc2634": {
+        "Name": "code-server",
+        "EndpointID": "1e347b9703ff52a8b85f4b6317470cb8fe7f71a95e523c9664c16cccc91b319a",
+        "MacAddress": "02:42:ac:13:00:0a",
+        "IPv4Address": "172.19.0.10/16",
+        "IPv6Address": ""
+      },
+      "c4117af0bd2accc9788b90d2f781eb25ce8119bcab575c7ef8060e43a825c28c": {
+        "Name": "stirlingpdf",
+        "EndpointID": "cb2060a77ac805c9abe043f1e3c4a08e1fc1ba04fae25c6efa1f0436a16b3c10",
+        "MacAddress": "02:42:ac:13:00:02",
+        "IPv4Address": "172.19.0.2/16",
+        "IPv6Address": ""
+      },
+      "cacadb28896e92b0bd733ae2f2690570a58cd4b67d75e633a33ffe91c43455c7": {
+        "Name": "apprise",
+        "EndpointID": "5646d0556b4cb5822eff4a387b07bd9f59fe66a44fdfce3df60ae8f000bf89ca",
+        "MacAddress": "02:42:ac:13:00:09",
+        "IPv4Address": "172.19.0.9/16",
+        "IPv6Address": ""
+      },
+      "d88f6fe12e1b3c86c11309f9bc13893a667feec5ae436cba2da17e8e86a128cb": {
+        "Name": "homarr",
+        "EndpointID": "217b5d6e75060971fc6c7513a18b748d3a26775bda3446b5788951cca9e27705",
+        "MacAddress": "02:42:ac:13:00:14",
+        "IPv4Address": "172.19.0.20/16",
+        "IPv6Address": ""
+      },
+      "f9507f084579fb5631e2fea20dc1908fb398f3df2e0c5c13eec07227bfacd230": {
+        "Name": "minipaint",
+        "EndpointID": "bbab680f3c96a876283a4372d8261811ea7cbbaa1d779e42d68404f567b40f76",
+        "MacAddress": "02:42:ac:13:00:05",
+        "IPv4Address": "172.19.0.5/16",
+        "IPv6Address": ""
+      }
+    },
+    "Options": {},
+    "Labels": {}
+  }
+]
