@@ -16,4 +16,4 @@ containerfile="$basedir"/"$container"/"container.json"
 networkfile="$basedir"/"$container"/"networks.json"
 cp "$containerfile" ./inspect.json
 cp "$networkfile" ./network.json
-./createdockercompose.sh "$containerfile" "$networkfile"
+./createdockerrun.sh "$containerfile" "$networkfile"
