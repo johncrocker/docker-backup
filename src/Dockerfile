@@ -50,6 +50,8 @@ ENV NOTIF_PUSHOVER_PRIORITY="0"
 ENV NOTIF_SLACK_WEBHOOK_ENABLE="false"
 ENV NOTIF_SLACK_WEBHOOK_URL=""
 
+RUN ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && echo $TZ > /etc/timezone
+
 WORKDIR /app
 
 COPY ./build/docker-backup.sh /app/docker-backup.sh
