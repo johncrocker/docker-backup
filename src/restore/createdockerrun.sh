@@ -138,8 +138,8 @@ function writeprop() {
 	if [[ ! -z "$value" ]] && [[ ! "$value" = "null" ]] && [[ ! "$value" = "[]" ]]; then
 		if [[ "$value" =~ \[.* ]]; then
 			if [ "$format" = "array" ]; then
-				value=$(echo "$json" | jq "$path" -r -c)
-				printf "\t--%s \"%s\" \\\\\n" "$prop" "$value"
+				value=$(echo "$json" | jq "$path | @tsv" -r -c | tr '\t' '\n' | awk '!/^$/' | sed -e "s/^/\t--$prop /" | sed -e 's/$/ \\/')
+				echo  "$value"
 			else
 				value=$(echo "$json" | jq "$path | @tsv" -r)
 				printf "\t--%s \"%s\" \\\\\n" "$prop" $(echo "$value" | tr "\t" " ")
@@ -261,29 +261,28 @@ function writedockerrun() {
 	writeprop "$json" "hostname" '.[].Config.Hostname'
 	writeprop "$json" "domainname" '.[].Config.Domainname'
 	writeprop "$json" "restart" '.[].HostConfig.RestartPolicy.Name'
-        writeprop "$json" "command" '.[].Config.Cmd' 'array'
         writeprop "$json" "entrypoint" '.[].Config.Entrypoint'
-        writeprop "$json" "security_opt" '.[].HostConfig.SecurityOpt'
+        writeprop "$json" "security-opt" '.[].HostConfig.SecurityOpt' 'array'
         writeprop "$json" "ulimits" '.[].HostConfig.Ulimits'
-        writeprop "$json" "cap_add" '.[].HostConfig.CapAdd'
-        writeprop "$json" "cap_drop" '.[].HostConfig.CapDrop'
+        writeprop "$json" "cap-add" '.[].HostConfig.CapAdd' 'array'
+        writeprop "$json" "cap-drop" '.[].HostConfig.CapDrop' 'array'
         writeprop "$json" "cgroup" '.[].HostConfig.Cgroup'
-        writeprop "$json" "cgroup_parent" '.[].HostConfig.CgroupParent'
+        writeprop "$json" "cgroup-parent" '.[].HostConfig.CgroupParent'
         writeprop "$json" "user" '.[].Config.User'
         writeprop "$json" "working_dir" '.[].Config.WorkingDir'
         writeprop "$json" "ipc" '.[].HostConfig.IpcMode'
         writeprop "$json" "privileged" '.[].HostConfig.Privileged'
         writeprop "$json" "read_only" '.[].HostConfig.ReadonlyRootfs'
         writeprop "$json" "stdin_open" '.[].Config.OpenStdin'
-        writeprop "$json" "stop_grace_period" '.[].Config.StopTyyimeout'
+        writeprop "$json" "stop-grace-period" '.[].Config.StopTyyimeout'
         writeprop "$json" "tty" '.[].Config.Tty'
-        writeprop "$json" "mac_address" '.[].NetworkSettings.MacAddress'
+        writeprop "$json" "mac-address" '.[].NetworkSettings.MacAddress'
         writeprop "$json" "dns" '.[].HostConfig.Dns'
-        writeprop "$json" "dns_search" '.[].HostConfig.DnsSearch'
+        writeprop "$json" "dns-search" '.[].HostConfig.DnsSearch'
 
 	env_file=$(getcontainerlabelvalue "$json" "com.docker.compose.project.environment_file")
 	if [ ! -z "$env_file" ]; then
-		printf "\t--env_file %s \\\\\n" "$env_file"
+		printf "\t--env-file %s \\\\\n" "$env_file"
 	fi
 
 	if [ ! -z "$envs" ]; then
@@ -294,7 +293,16 @@ function writedockerrun() {
 		printf "%s\n" "$labels"
 	fi
 
-	printf "\t%s\n" $(echo "$json" | jq .[].Config.Image -r)
+	cmd=$(echo "$json" | jq '.[].Config.Cmd' -r | awk '!/^(nullw)/{printf ("%s\n" ,$1)}' )
+
+	if [ -z "$cmd" ]; then
+		printf "\t%s\n" $(echo "$json" | jq .[].Config.Image -r)
+	else
+		cmd=$(echo "$json" | jq '.[].Config.Cmd | @tsv' -r | tr '\t' ' ')
+		printf "\t%s\\\\\n" $(echo "$json" | jq .[].Config.Image -r)
+		printf "\t%s\n" "$cmd"
+	fi
+
 }
 
 json=$(cat "$1")
