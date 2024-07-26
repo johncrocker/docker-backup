@@ -754,10 +754,8 @@ function dockerbackup() {
 	local workingdir
 	local configfile
 	local envfile
-	local volumetarget
 	container="$1"
 	target="$2"
-	volumetarget="$target""/volumes"
 	containername=$(docker container inspect "$container" --format '{{.Name}}' | cut -c2-)
 	containerid=$(docker container inspect "$container" --format '{{.Id}}')
 	exclude=$(getcontainerlabelvalue "$container" "guidcruncher.dockerbackup.exclude" "false")
@@ -775,13 +773,7 @@ function dockerbackup() {
 		return 1
 	fi
 
-	if [[ "$PARAM_SIMULATE" = "" ]]; then
-		mkdir -p "$target"/"$containername"/"volumes"
-		mkdir -p "$target"/"$containername"/"binds"
-	fi
-
 	log "trace" "Backing up volumes for $containername"
-	volumejson="{}"
 
 	getcontainermounts "$container" | while read -r line; do
 		type=$(echo "$line" | cut -d$',' -f2)
@@ -818,13 +810,22 @@ function dockerbackup() {
 			else
 				backupvolumebypath "$volumename" "$filename"
 			fi
-			filename="$volumename""$(tarext)"
-			volumejson=$(echo "$volumejson" | jq ". = . + {\"$volumename\": \"$filename\"}")
+
+			if [[ "$PARAM_SIMULATE" = "" ]]; then
+				mkdir -p "$target"/"$containername"
+
+				if [ ! -f "$target"/"$containername""/volumes.json" ]; then
+					echo "{}" >"$target"/"$containername""/volumes.json"
+				fi
+
+				filename="$volumename""$(tarext)"
+				# shellcheck disable=SC2030
+				volumejson=$(cat "$target"/"$containername""/volumes.json" | jq ". = . + {\"$volumename\": \"$filename\"}")
+				echo "$volumejson" | jq >"$target"/"$containername""/volumes.json"
+			fi
 			;;
 		esac
 	done
-
-	echo "$volumejson" | jq >"$target"/"$containername""/volumes.json"
 
 	backupcontainer "$container" "$target"/"$containername"/"container$(tarext)"
 

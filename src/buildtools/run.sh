@@ -21,7 +21,7 @@ docker run -it --rm --name docker-backup-test \
                 -e NOTIF_GOTIFY_ENABLE=false \
                 -e NOTIF_MATTERMOST_ENABLE=false \
                 -e NOTIF_DISCORD_ENABLE=false \
-		-e NOTIF_APPRISE_ENABLE=true \
+		-e NOTIF_APPRISE_ENABLE=false \
                 -e NOTIF_PUSHOVER_ENABLE=false \
                 -e NOTIF_APPRISE_URLS=pover://ukmd45b1xhek1jbm4v9g83zzqxjzbm@a2ep2u3kuva7sauc6jx48dx4vb4nue?rto=30 \
                 -e NOTIF_APPRISE_SERVER_URL=http://apprise.apps.home \
@@ -31,5 +31,5 @@ docker run -it --rm --name docker-backup-test \
                 -v /media/external/docker-backup:/target \
                 -v /media/logs:/logs \
 		"crockerish/docker-backup:$version" \
-		--test-notifications
+		hedgedoc
 

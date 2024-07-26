@@ -398,6 +398,10 @@ backupvolumewithdocker "$volume" "$target"
 return
 fi
 log "trace" "Using path: $volumepath"
+if [[ -f $target ]];then
+log "info" "Volume mount $volume has already been backed up innp this session (Possible reuse?) - skipping"
+return
+fi
 case "$targetfile" in
 *.tar.gz)tar -cf - -C "$volumepath" .|gzip "$BACKUP_COMPRESS_GZ_OPT" - \
 >"$target"
@@ -424,6 +428,10 @@ targetfile=$(basename "$target")
 log "trace" "Backing up volume mount $volume (Size $(getvolumesize "$volume"))"
 if [[ $PARAM_SIMULATE == "" ]];then
 mkdir -p "$targetdir"
+if [[ -f $target ]];then
+log "info" "Volume mount $volume has already been backed up innp this session (Possible reuse?) - skipping"
+return
+fi
 case "$targetfile" in
 *.tar.gz)docker run --rm --name volumebackup \
 -v "$volume":/source:ro \
@@ -629,10 +637,6 @@ if [[ $exclude == "true" ]];then
 log "info" "Container excluded from backup: $containername"
 return 1
 fi
-if [[ $PARAM_SIMULATE == "" ]];then
-mkdir -p "$target"/"$containername"/"volumes"
-mkdir -p "$target"/"$containername"/"binds"
-fi
 log "trace" "Backing up volumes for $containername"
 getcontainermounts "$container"|while read -r line;do
 type=$(echo "$line"|cut -d$',' -f2)
@@ -645,7 +649,7 @@ bind)\
 filename="$target"/"$containername"/binds/"$volumename""$(tarext)"
 ;;
 volume)\
-filename="$target"/"$containername"/volumes/"$volumename""$(tarext)"
+filename="$target""/volumes/$volumename""$(tarext)"
 log "trace" "Output file: $filename"
 if [[ $BACKUP_PAUSECONTAINERS == "true" ]];then
 log "trace" "Stopping containers using volume $volumename before volume backup"
@@ -662,6 +666,15 @@ log "trace" "Starting container $volumecontainer after backup volume $volumename
 done
 else
 backupvolumebypath "$volumename" "$filename"
+fi
+if [[ $PARAM_SIMULATE == "" ]];then
+mkdir -p "$target"/"$containername"
+if [ ! -f "$target"/"$containername""/volumes.json" ];then
+echo "{}" >"$target"/"$containername""/volumes.json"
+fi
+filename="$volumename""$(tarext)"
+volumejson=$(cat "$target"/"$containername""/volumes.json"|jq ". = . + {\"$volumename\": \"$filename\"}")
+echo "$volumejson"|jq >"$target"/"$containername""/volumes.json"
 fi
 esac
 done
