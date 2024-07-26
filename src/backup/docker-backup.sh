@@ -491,6 +491,11 @@ function backupvolumebypath() {
 
 		log "trace" "Using path: $volumepath"
 
+		if [[ -f "$target" ]]; then
+			log "info" "Volume mount $volume has already been backed up innp this session (Possible reuse?) - skipping"
+			return
+		fi
+
 		case "$targetfile" in
 		*.tar.gz)
 			tar -cf - -C "$volumepath" . | gzip "$BACKUP_COMPRESS_GZ_OPT" - >"$target"
@@ -523,6 +528,12 @@ function backupvolumewithdocker() {
 
 	if [[ "$PARAM_SIMULATE" = "" ]]; then
 		mkdir -p "$targetdir"
+
+		if [[ -f "$target" ]]; then
+			log "info" "Volume mount $volume has already been backed up innp this session (Possible reuse?) - skipping"
+			return
+		fi
+
 		case "$targetfile" in
 		*.tar.gz)
 			docker run --rm --name volumebackup \
@@ -743,8 +754,10 @@ function dockerbackup() {
 	local workingdir
 	local configfile
 	local envfile
+	local volumetarget
 	container="$1"
 	target="$2"
+	volumetarget="$target""/volumes"
 	containername=$(docker container inspect "$container" --format '{{.Name}}' | cut -c2-)
 	containerid=$(docker container inspect "$container" --format '{{.Id}}')
 	exclude=$(getcontainerlabelvalue "$container" "guidcruncher.dockerbackup.exclude" "false")
@@ -768,6 +781,7 @@ function dockerbackup() {
 	fi
 
 	log "trace" "Backing up volumes for $containername"
+	volumejson="{}"
 
 	getcontainermounts "$container" | while read -r line; do
 		type=$(echo "$line" | cut -d$',' -f2)
@@ -781,7 +795,7 @@ function dockerbackup() {
 			filename="$target"/"$containername"/binds/"$volumename""$(tarext)"
 			;;
 		volume)
-			filename="$target"/"$containername"/volumes/"$volumename""$(tarext)"
+			filename="$target""/volumes/$volumename""$(tarext)"
 			log "trace" "Output file: $filename"
 
 			if [[ "$BACKUP_PAUSECONTAINERS" = "true" ]]; then
@@ -804,9 +818,13 @@ function dockerbackup() {
 			else
 				backupvolumebypath "$volumename" "$filename"
 			fi
+			filename="$volumename""$(tarext)"
+			volumejson=$(echo "$volumejson" | jq ". = . + {\"$volumename\": \"$filename\"}")
 			;;
 		esac
 	done
+
+	echo "$volumejson" | jq >"$target"/"$containername""/volumes.json"
 
 	backupcontainer "$container" "$target"/"$containername"/"container$(tarext)"
 
