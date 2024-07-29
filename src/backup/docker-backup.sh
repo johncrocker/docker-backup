@@ -878,10 +878,12 @@ function backupsystem() {
 	fi
 }
 
-function parsearguments() {
+function sparsearguments() {
 	PARAM_SIMULATE=""
 
+	echo "Command line arguments: "
 	for arg in "$@"; do
+		echo "  - $arg"
 		key=$(echo "$arg" | cut -c 3- | cut -d "=" -f1)
 		value=$(echo "$arg" | cut -d "=" -f2-)
 
@@ -944,7 +946,7 @@ function main() {
 	if [[ "$containertobackup" = "" ]]; then
 		notify "docker-backup" "Performing full backup" "info"
 		for containername in $(getcontainernames); do
-			if [ -n "$containernane" ]; then
+			if [ -n "$containername" ]; then
 				dockerbackup "$containername" "$backuptarget"
 			fi
 		done
@@ -952,7 +954,7 @@ function main() {
 		notify "docker-backup" "Performing partial backup of $containertobackup" "info"
 
 		for containername in $(echo "$containertobackup" | tr ',' '\n'); do
-			if [ -n "$containernane" ]; then
+			if [ -n "$containername" ]; then
 				dockerbackup "$containername" "$backuptarget"
 			fi
 		done
