@@ -878,7 +878,7 @@ function backupsystem() {
 	fi
 }
 
-function sparsearguments() {
+function parsearguments() {
 	PARAM_SIMULATE=""
 
 	echo "Command line arguments: "
