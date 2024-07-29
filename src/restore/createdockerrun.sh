@@ -299,7 +299,7 @@ function writedockerrun() {
 		printf "\t%s\n" $(echo "$json" | jq .[].Config.Image -r)
 	else
 		cmd=$(echo "$json" | jq '.[].Config.Cmd | @tsv' -r | tr '\t' ' ')
-		printf "\t%s\\\\\n" $(echo "$json" | jq .[].Config.Image -r)
+		printf "\t%s \\\\\n" $(echo "$json" | jq .[].Config.Image -r)
 		printf "\t%s\n" "$cmd"
 	fi
 

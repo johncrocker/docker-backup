@@ -491,6 +491,11 @@ function backupvolumebypath() {
 
 		log "trace" "Using path: $volumepath"
 
+		if [[ -f "$target" ]]; then
+			log "info" "Volume mount $volume has already been backed up innp this session (Possible reuse?) - skipping"
+			return
+		fi
+
 		case "$targetfile" in
 		*.tar.gz)
 			tar -cf - -C "$volumepath" . | gzip "$BACKUP_COMPRESS_GZ_OPT" - >"$target"
@@ -523,6 +528,12 @@ function backupvolumewithdocker() {
 
 	if [[ "$PARAM_SIMULATE" = "" ]]; then
 		mkdir -p "$targetdir"
+
+		if [[ -f "$target" ]]; then
+			log "info" "Volume mount $volume has already been backed up innp this session (Possible reuse?) - skipping"
+			return
+		fi
+
 		case "$targetfile" in
 		*.tar.gz)
 			docker run --rm --name volumebackup \
@@ -745,6 +756,12 @@ function dockerbackup() {
 	local envfile
 	container="$1"
 	target="$2"
+
+	if [ "$(docker container inspect -f '{{.State.Status}}' "$container")" != "running" ]; then
+		log "error" "Container is not Running or does not exist, cannot backup: $container"
+		return 1
+	fi
+
 	containername=$(docker container inspect "$container" --format '{{.Name}}' | cut -c2-)
 	containerid=$(docker container inspect "$container" --format '{{.Id}}')
 	exclude=$(getcontainerlabelvalue "$container" "guidcruncher.dockerbackup.exclude" "false")
@@ -762,11 +779,6 @@ function dockerbackup() {
 		return 1
 	fi
 
-	if [[ "$PARAM_SIMULATE" = "" ]]; then
-		mkdir -p "$target"/"$containername"/"volumes"
-		mkdir -p "$target"/"$containername"/"binds"
-	fi
-
 	log "trace" "Backing up volumes for $containername"
 
 	getcontainermounts "$container" | while read -r line; do
@@ -781,7 +793,7 @@ function dockerbackup() {
 			filename="$target"/"$containername"/binds/"$volumename""$(tarext)"
 			;;
 		volume)
-			filename="$target"/"$containername"/volumes/"$volumename""$(tarext)"
+			filename="$target""/volumes/$volumename""$(tarext)"
 			log "trace" "Output file: $filename"
 
 			if [[ "$BACKUP_PAUSECONTAINERS" = "true" ]]; then
@@ -803,6 +815,19 @@ function dockerbackup() {
 				done
 			else
 				backupvolumebypath "$volumename" "$filename"
+			fi
+
+			if [[ "$PARAM_SIMULATE" = "" ]]; then
+				mkdir -p "$target"/"$containername"
+
+				if [ ! -f "$target"/"$containername""/volumes.json" ]; then
+					echo "{}" >"$target"/"$containername""/volumes.json"
+				fi
+
+				filename="$volumename""$(tarext)"
+				# shellcheck disable=SC2030
+				volumejson=$(cat "$target"/"$containername""/volumes.json" | jq ". = . + {\"$volumename\": \"$filename\"}")
+				echo "$volumejson" | jq >"$target"/"$containername""/volumes.json"
 			fi
 			;;
 		esac
@@ -870,6 +895,10 @@ function parsearguments() {
 			notify "docker-backup" "Notification test from docker-backup."
 			exit
 			;;
+		container)
+			PARAM_CONTAINERS="$value"
+			log "trace" "Been asked to backup certain containers: $PARAM_CONTAINERS"
+			;;
 		esac
 	done
 
@@ -880,6 +909,10 @@ function main() {
 	backuptarget="$BACKUP_STORE"/"$BACKUPDATE"
 
 	parsearguments "$@"
+
+	if [ -n "$PARAM_CONTAINERS" ]; then
+		containertobackup="$PARAM_CONTAINERS"
+	fi
 
 	if [[ "$PARAM_SIMULATE" = "" ]]; then
 		mkdir -p "$backuptarget"
@@ -911,11 +944,18 @@ function main() {
 	if [[ "$containertobackup" = "" ]]; then
 		notify "docker-backup" "Performing full backup" "info"
 		for containername in $(getcontainernames); do
-			dockerbackup "$containername" "$backuptarget"
+			if [ -n "$containernane" ]; then
+				dockerbackup "$containername" "$backuptarget"
+			fi
 		done
 	else
 		notify "docker-backup" "Performing partial backup of $containertobackup" "info"
-		dockerbackup "$containertobackup" "$backuptarget"
+
+		for containername in $(echo "$containertobackup" | tr ',' '\n'); do
+			if [ -n "$containernane" ]; then
+				dockerbackup "$containername" "$backuptarget"
+			fi
+		done
 	fi
 
 	# sudo chown "$(id -u)":"$(id -g)" "$backuptarget" -R
