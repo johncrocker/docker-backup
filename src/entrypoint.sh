@@ -13,6 +13,9 @@ if [ -f /.dockerenv ]; then
 	# shellcheck disable=SC2155
 	export DOCKER_BACKUP_CONTAINERID="$(docker inspect "$containerid" -f '{{.Id}}')"
 	export BACKUP_SOURCE="/source"
+else
+	echo "ERROR: I am a dockerised backup tool and cannot be run outside of a container."
+	exit
 fi
 
 BACKUPDATE="$(date '+%Y%m%d-%H%M')"

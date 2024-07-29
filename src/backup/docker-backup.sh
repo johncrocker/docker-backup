@@ -756,6 +756,12 @@ function dockerbackup() {
 	local envfile
 	container="$1"
 	target="$2"
+
+	if [ "$(docker container inspect -f '{{.State.Status}}' "$container")" != "running" ]; then
+		log "error" "Container is not Running or does not exist, cannot backup: $container"
+		return 1
+	fi
+
 	containername=$(docker container inspect "$container" --format '{{.Name}}' | cut -c2-)
 	containerid=$(docker container inspect "$container" --format '{{.Id}}')
 	exclude=$(getcontainerlabelvalue "$container" "guidcruncher.dockerbackup.exclude" "false")
@@ -889,6 +895,10 @@ function parsearguments() {
 			notify "docker-backup" "Notification test from docker-backup."
 			exit
 			;;
+		container)
+			PARAM_CONTAINERS="$value"
+			log "trace" "Been asked to backup certain containers: $PARAM_CONTAINERS"
+			;;
 		esac
 	done
 
@@ -899,6 +909,10 @@ function main() {
 	backuptarget="$BACKUP_STORE"/"$BACKUPDATE"
 
 	parsearguments "$@"
+
+	if [ -n "$PARAM_CONTAINERS" ]; then
+		containertobackup="$PARAM_CONTAINERS"
+	fi
 
 	if [[ "$PARAM_SIMULATE" = "" ]]; then
 		mkdir -p "$backuptarget"
@@ -930,11 +944,18 @@ function main() {
 	if [[ "$containertobackup" = "" ]]; then
 		notify "docker-backup" "Performing full backup" "info"
 		for containername in $(getcontainernames); do
-			dockerbackup "$containername" "$backuptarget"
+			if [ -n "$containernane" ]; then
+				dockerbackup "$containername" "$backuptarget"
+			fi
 		done
 	else
 		notify "docker-backup" "Performing partial backup of $containertobackup" "info"
-		dockerbackup "$containertobackup" "$backuptarget"
+
+		for containername in $(echo "$containertobackup" | tr ',' '\n'); do
+			if [ -n "$containernane" ]; then
+				dockerbackup "$containername" "$backuptarget"
+			fi
+		done
 	fi
 
 	# sudo chown "$(id -u)":"$(id -g)" "$backuptarget" -R
